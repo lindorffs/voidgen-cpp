@@ -10,5 +10,5 @@ SDL2_ttf
 
 lua5-3
 
-# Building
+## Building
 make
