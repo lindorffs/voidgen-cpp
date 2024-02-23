@@ -89,18 +89,18 @@ ControlsState::ControlsState(engine *engine_target) {
 	this->controls_b = engine_target->load_image("menu.png");
 }
 void OpenSpaceState::_internal_render(void) {
-	this->engine_target->render_at(this->background_far, SCREEN_WIDTH/2 - this->entities[0]->x * 0.025, SCREEN_HEIGHT/2 - this->entities[0]->y * 0.025);
-	this->engine_target->render_at(this->background_close, SCREEN_WIDTH/2 - this->entities[0]->x * 0.05, SCREEN_HEIGHT/2 - this->entities[0]->y * 0.05);
+	this->engine_target->render_at(this->background_far, SCREEN_WIDTH/2 - this->engine_target->state_manager->entity_states[0]->x * 0.025, SCREEN_HEIGHT/2 - this->engine_target->state_manager->entity_states[0]->y * 0.025);
+	this->engine_target->render_at(this->background_close, SCREEN_WIDTH/2 - this->engine_target->state_manager->entity_states[0]->x * 0.05, SCREEN_HEIGHT/2 - this->engine_target->state_manager->entity_states[0]->y * 0.05);
 	
-	for (int i = 1; i < 32; i++) {
-		if (this->entities[i] == NULL) {
+	for (int i = 1; i < ENGINE_MAX_ENTITIES; i++) {
+		if (this->engine_target->state_manager->entity_states[i] == NULL) {
 			
 		} else {
-			this->entities[i]->render();
+			this->engine_target->state_manager->entity_states[i]->render();
 		}
 	}
 	
-	this->entities[0]->render();
+	this->engine_target->state_manager->entity_states[0]->render();
 	
 	
 	lua_getglobal(this->engine_target->lua_instance, "openspace_render");
@@ -124,11 +124,11 @@ void OpenSpaceState::_internal_update(std::chrono::milliseconds time_delta) {
 		}
 	}
 	
-	for (int i = 0; i < 32; i++) {
-		if (this->entities[i] == NULL) {
+	for (int i = 0; i < ENGINE_MAX_ENTITIES; i++) {
+		if (this->engine_target->state_manager->entity_states[i] == NULL) {
 			
 		} else {
-			this->entities[i]->update(time_delta);
+			this->engine_target->state_manager->entity_states[i]->update(time_delta);
 		}
 	}
 	
@@ -139,11 +139,6 @@ void OpenSpaceState::_internal_update(std::chrono::milliseconds time_delta) {
 
 OpenSpaceState::OpenSpaceState(engine *engine_target) {
 	this->engine_target = engine_target;
-	this->entities[0] = new PlayerClass(engine_target, this);
-	for (int i = 1; i < 32; i++) {
-		this->entities[i] = NULL;
-	}
-	this->entities[1] = new entity("pytheran_planet_1.png", 100, 100, engine_target, this);
 	this->controls_a = engine_target->load_image("controls_b.png");
 	this->controls_b = engine_target->load_image("controls_a.png");
 	this->background_close = engine_target->load_image("close.png");
@@ -156,6 +151,10 @@ state_machine::state_machine(engine *engine_target) {
 	this->idleState = new IdleState(engine_target);
 	this->controlsState = new ControlsState(engine_target);
 	this->statename = "idleState";
+	this->entity_states[0] = new PlayerClass(engine_target);
+	for (int i = 1; i < ENGINE_MAX_ENTITIES; i++) {
+		this->entity_states[i] = NULL;
+	}
 }
 
 void state_machine::render(void) {
