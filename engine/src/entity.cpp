@@ -6,8 +6,8 @@
 const int SCREEN_WIDTH = 1600;
 const int SCREEN_HEIGHT = 900;
 void entity::_internal_render(void) {
-	int render_x = SCREEN_WIDTH/2 + this->x - this->state_target->entities[0]->x;
-	int render_y = SCREEN_HEIGHT/2 + this->y - this->state_target->entities[0]->y;
+	int render_x = SCREEN_WIDTH/2 + this->x - this->engine_target->state_manager->entity_states[0]->x;
+	int render_y = SCREEN_HEIGHT/2 + this->y - this->engine_target->state_manager->entity_states[0]->y;
 	
 	this->engine_target->render_at_scale_rotate(this->entity_image, render_x, render_y, 0.5, 0.5, false, this->rotation);
 }
@@ -19,9 +19,8 @@ void entity::_internal_update(std::chrono::milliseconds time_delta) {
 entity::entity() {
 }
 
-entity::entity(std::string fileName, int x, int y, engine *engine_target, OpenSpaceState *state_target) {
+entity::entity(std::string fileName, int x, int y, engine *engine_target) {
 	this->engine_target = engine_target;
-	this->state_target = state_target;
 	this->entity_image = engine_target->load_image(fileName);
 	
 	this->x = x;
@@ -36,8 +35,8 @@ void  entity::update(std::chrono::milliseconds time_delta) {
 	this->_internal_update(time_delta);
 }
 void ProjectileEntity::_internal_render(void) {
-	int render_x = SCREEN_WIDTH/2 + this->x - this->state_target->entities[0]->x;
-	int render_y = SCREEN_HEIGHT/2 + this->y - this->state_target->entities[0]->y;
+	int render_x = SCREEN_WIDTH/2 + this->x - this->engine_target->state_manager->entity_states[0]->x;
+	int render_y = SCREEN_HEIGHT/2 + this->y - this->engine_target->state_manager->entity_states[0]->y;
 	
 	this->engine_target->render_at_scale_rotate(this->entity_image, render_x, render_y, 0.5, 0.5, false, this->rotation);
 }
@@ -50,9 +49,8 @@ void ProjectileEntity::_internal_update(std::chrono::milliseconds time_delta) {
 ProjectileEntity::ProjectileEntity() {
 }
 
-ProjectileEntity::ProjectileEntity(std::string fileName, int x, int y, engine *engine_target, OpenSpaceState *state_target, int id) {
+ProjectileEntity::ProjectileEntity(std::string fileName, int x, int y, engine *engine_target) {
 	this->engine_target = engine_target;
-	this->state_target = state_target;
 	this->entity_image = engine_target->load_image(fileName);
 	
 	this->x = x;
@@ -68,9 +66,8 @@ void  ProjectileEntity::update(std::chrono::milliseconds time_delta) {
 	this->_internal_update(time_delta);
 }
 
-PlayerClass::PlayerClass(engine *engine_target, OpenSpaceState *state_target) {
+PlayerClass::PlayerClass(engine *engine_target) {
 	this->engine_target = engine_target;
-	this->state_target = state_target;
 	this->entity_image = engine_target->load_image("player.png");
 	this->x = 0;
 	this->y = 0;
