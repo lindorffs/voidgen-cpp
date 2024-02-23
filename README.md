@@ -9,3 +9,6 @@ SDL2_image
 SDL2_ttf
 
 lua5-3
+
+# Building
+make
