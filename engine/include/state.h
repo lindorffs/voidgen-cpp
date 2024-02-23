@@ -53,7 +53,6 @@ class OpenSpaceState : public State {
 	public:
 		OpenSpaceState(engine* engine_target);
 		OpenSpaceState();
-		entity *entities[32];
 		SDL_Texture *background_far = NULL;
 		SDL_Texture *background_close = NULL;
 		SDL_Texture *controls_a = NULL;
@@ -82,6 +81,7 @@ public:
 	void set_current_state(std::string statename);
 	const Uint8 *keyboard_state = NULL;
 	std::string statename;
+	entity *entity_states[ENGINE_MAX_ENTITIES];
     OpenSpaceState* openSpaceState = NULL;
 	IdleState* idleState = NULL;
 	ControlsState* controlsState = NULL;
