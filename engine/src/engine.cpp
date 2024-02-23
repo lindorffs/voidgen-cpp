@@ -39,8 +39,8 @@ int lua_player_set_velocity(lua_State *lua_instance) {
 	double vx = lua_tonumber(lua_instance, 1);
 	double vy = lua_tonumber(lua_instance, 2);
 	
-	l_engine->state_manager->openSpaceState->entities[0]->vx = vx;
-	l_engine->state_manager->openSpaceState->entities[0]->vy = vy;
+	l_engine->state_manager->entity_states[0]->vx = vx;
+	l_engine->state_manager->entity_states[0]->vy = vy;
 	
 	//this->render_text(text, x, y, r, g, b);
 	return 0;
@@ -51,8 +51,8 @@ int lua_player_set_position(lua_State *lua_instance) {
 	double x = lua_tonumber(lua_instance, 1);
 	double y = lua_tonumber(lua_instance, 2);
 	
-	l_engine->state_manager->openSpaceState->entities[0]->x = x;
-	l_engine->state_manager->openSpaceState->entities[0]->y = y;
+	l_engine->state_manager->entity_states[0]->x = x;
+	l_engine->state_manager->entity_states[0]->y = y;
 	
 	//this->render_text(text, x, y, r, g, b);
 	return 0;
@@ -61,7 +61,7 @@ int lua_player_set_rotation(lua_State *lua_instance) {
 	int args = lua_gettop(lua_instance);
 	
 	double rotation = lua_tonumber(lua_instance, 1);
-	l_engine->state_manager->openSpaceState->entities[0]->rotation = rotation ;
+	l_engine->state_manager->entity_states[0]->rotation = rotation ;
 	
 	//this->render_text(text, x, y, r, g, b);
 	return 0;
