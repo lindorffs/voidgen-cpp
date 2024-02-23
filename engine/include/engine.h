@@ -7,6 +7,8 @@
 #include <string>
 #include <chrono>
 
+#define ENGINE_MAX_ENTITIES 128
+
 extern "C" {
 	#include <lua.h>
 	#include <lualib.h>
