@@ -7,7 +7,9 @@
 #include <string>
 #include <chrono>
 
-#define ENGINE_MAX_ENTITIES 128
+#define ENGINE_MAX_ENTITIES 512
+#define ENGINE_MAX_TEXTURES 512
+#define ENGINE_MAX_SUB_TEXTURES 512
 
 extern "C" {
 	#include <lua.h>
@@ -17,6 +19,29 @@ extern "C" {
 
 class state;
 class state_machine;
+
+class texture_resource {
+public:
+	std::string id = "";
+	std::string file = "";
+	SDL_Texture* texture = NULL;
+	~texture_resource();
+	texture_resource();
+	texture_resource(std::string id, std::string file);
+};
+
+class sub_texture {
+public:
+	std::string id = "";
+	std::string texture_resource = "";
+	int w;
+	int h;
+	int s_x;
+	int s_y;
+	SDL_Rect source_rect;
+	sub_texture();
+	sub_texture(std::string id, std::string texture_resource, int w, int h, int x, int y);
+};
 
 class engine {
 	private:
@@ -35,7 +60,9 @@ class engine {
 		std::chrono::milliseconds display_at = std::chrono::milliseconds(0);
 		
 		SDL_Texture* load_logo = NULL;
+		texture_resource *textures[ENGINE_MAX_TEXTURES];
 	public:
+		sub_texture *sub_textures[ENGINE_MAX_SUB_TEXTURES];
 		TTF_Font *global_font = NULL;
 		SDL_Renderer* renderer = NULL;
 		
@@ -46,11 +73,16 @@ class engine {
 	void begin(void);
 	void stop(void);
 	void render_fill(SDL_Texture* surface);
-	void render_at(SDL_Texture*, int x, int y);
+	void render_at(SDL_Texture*, int x, int y, double sx, double sy, const double angle);
+	void render_sub_texture(sub_texture*, int x, int y, double sx, double sy, const double angle);
+	void render_direct(std::string texture_id, int x, int y, double sx, double sy, const double angle);
 	void render_left(SDL_Texture*, int x, int y);
 	void render_at_scale(SDL_Texture*, int x, int y, double sx, double sy, bool divide);
 	void render_at_scale_rotate(SDL_Texture*, int x, int y, double sx, double sy, bool divide, const double angle);
 	
+	void register_texture(std::string name, std::string filepath);
+	void register_sub_texture(std::string id, std::string texture_id, int sub_w, int sub_h, int sub_x, int sub_y);
+	SDL_Texture* get_texture(std::string id);
 	void render_text(std::string string, int x, int y, int r, int g, int b);
 	
 	SDL_Texture* load_image(std::string path);

@@ -13,7 +13,6 @@ class entity {
 	public:
 		virtual void _internal_render(void);
 		virtual void _internal_update(std::chrono::milliseconds time_delta);
-		SDL_Texture *entity_image = NULL;
 		
 		engine *engine_target = NULL;
 		double x;
@@ -22,21 +21,30 @@ class entity {
 		double vy;
 		double rotation = 0.0;
 		entity();
-		entity(std::string fileName, int x, int y, engine *engine_target);
+		~entity();
+		entity(std::string texture_id, std::string id, int x, int y, engine *engine_target);
 		void render(void);
 		void update(std::chrono::milliseconds time_delta);
+		void apply_forward_force(double);
+		
+		double get_velocity_angle(void);
+		std::string id;
+		std::string texture_id, base_texture_id;
+		
+		void set_texture(std::string id);
+		void reset_texture(void);
+		
+		bool direct_movement = false;
 	
 };
 
 class ProjectileEntity : public entity{
 	public:
-		virtual void _internal_render(void);
 		virtual void _internal_update(std::chrono::milliseconds time_delta);
 		ProjectileEntity();
-		ProjectileEntity(std::string fileName, int x, int y, engine *engine_target);
+		ProjectileEntity(std::string fileName, std::string id, int x, int y, engine *engine_target);
 		void render(void);
 		void update(std::chrono::milliseconds time_delta);
-		int id;
 };
 
 class PlayerClass : public entity {
