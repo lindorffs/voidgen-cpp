@@ -1,14 +1,2 @@
 # voidgen-cpp
-VoidGEN CPP Version
-
-## Requires
-SDL2
-
-SDL2_image
-
-SDL2_ttf
-
-lua5-3
-
-## Building
-make
+VoidGEN is a game engine written in C++ and utilizing LUA for game logic scripting.
