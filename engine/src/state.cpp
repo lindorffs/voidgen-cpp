@@ -30,163 +30,177 @@ void State::update(std::chrono::milliseconds time_delta) {
 }
 void State::_internal_render(void) {
 }
+void State::_internal_unload(void) {
+}
+void State::_internal_load(void) {
+}
+void State::unload(void) {
+	this->_internal_unload();
+}
+void State::load(void) {
+	this->_internal_load();
+}
 void State::_internal_update(std::chrono::milliseconds time_delta) {
 }
-
-void IdleState::_internal_render(void) {
-	this->engine_target->render_at_scale(this->controls_b, SCREEN_WIDTH/2,SCREEN_HEIGHT/2, 3 ,4, false);
-	this->engine_target->render_at_scale_rotate(this->logo, SCREEN_WIDTH/2, SCREEN_HEIGHT/2, 2, 2, true, this->logo_rotation);
-	this->engine_target->render_text("Press", SCREEN_WIDTH /2 , SCREEN_HEIGHT /2-92, 0,255,0);
-	this->engine_target->render_text("Void.GEN Initialized... Ready...", SCREEN_WIDTH /2 , SCREEN_HEIGHT /2-224, 0,255,0);
-	this->engine_target->render_text("To Begin", SCREEN_WIDTH /2 , SCREEN_HEIGHT /2+92, 0,255,0);
-}
-void IdleState::_internal_update(std::chrono::milliseconds time_delta) {
-	SDL_Event e;
-	while( SDL_PollEvent( &e ) ){
-		if( e.type == SDL_QUIT ) this->engine_target->stop();
-		else if (e.type == SDL_KEYDOWN) {
-		}
-	}
-	const Uint8 *key_state = this->engine_target->state_manager->keyboard_state;
-	if (key_state[SDL_SCANCODE_V] and key_state[SDL_SCANCODE_G]) {
-			this->engine_target->state_manager->set_current_state("openSpaceState");
-		
-	}
-	this->logo_rotation += 1;
-}
-
-
-IdleState::IdleState(engine *engine_target) {
+LuaState::LuaState(engine *engine_target, std::string lua_source, std::string state_prefix) {
 	this->engine_target = engine_target;
-	this->controls_b = engine_target->load_image("menu.png");
-	this->logo = engine_target->load_image("logo.png");
+	this->lua_source = lua_source;
+	this->state_prefix = state_prefix;
+	luaL_dofile(this->engine_target->lua_instance,lua_source.c_str());
 }
-void ControlsState::_internal_render(void) {
-	this->engine_target->render_at_scale(this->controls_b, SCREEN_WIDTH/2,SCREEN_HEIGHT/2, 3 ,4, false);
-	this->engine_target->render_text("CONTROLS", SCREEN_WIDTH /2, SCREEN_HEIGHT /2-224, 0,255,0);
-	this->engine_target->render_text("F1 - View Controls", SCREEN_WIDTH /2 , SCREEN_HEIGHT /2-128, 0,255,0);
-	this->engine_target->render_text("ESC - Pause", SCREEN_WIDTH /2 , SCREEN_HEIGHT /2-96, 0,255,0);
-	this->engine_target->render_text("W - Forward", SCREEN_WIDTH /2 , SCREEN_HEIGHT /2-64, 0,255,0);
-	this->engine_target->render_text("S - Reverse", SCREEN_WIDTH /2 , SCREEN_HEIGHT /2-32, 0,255,0);
-	this->engine_target->render_text("Q - Rotate Left", SCREEN_WIDTH /2 , SCREEN_HEIGHT /2, 0,255,0);
-	this->engine_target->render_text("E - Rotate Right", SCREEN_WIDTH /2 , SCREEN_HEIGHT /2 + 32, 0,255,0);
-	this->engine_target->render_text("X - Stop", SCREEN_WIDTH /2 , SCREEN_HEIGHT /2 + 64, 0,255,0);
-	this->engine_target->render_text("V - Return To (0,0)", SCREEN_WIDTH /2 , SCREEN_HEIGHT /2 + 96, 0,255,0);
+void LuaState::_internal_unload(void) {
+	lua_getglobal(this->engine_target->lua_instance, (state_prefix+std::string("_unload")).c_str());
+	lua_call(this->engine_target->lua_instance, 0, 0);
+	
 }
-void ControlsState::_internal_update(std::chrono::milliseconds time_delta) {
-	SDL_Event e;
-	while( SDL_PollEvent( &e ) ){
-		if( e.type == SDL_QUIT ) this->engine_target->stop();
-		else if (e.type == SDL_KEYDOWN) {
-			this->engine_target->state_manager->set_current_state("openSpaceState");
-		}
-	}
+void LuaState::_internal_load(void) {
+	lua_getglobal(this->engine_target->lua_instance, (state_prefix+std::string("_load")).c_str());
+	lua_call(this->engine_target->lua_instance, 0, 0);
+	
 }
-
-
-ControlsState::ControlsState(engine *engine_target) {
-	this->engine_target = engine_target;
-	this->controls_b = engine_target->load_image("menu.png");
-}
-void OpenSpaceState::_internal_render(void) {
-	this->engine_target->render_at(this->background_far, SCREEN_WIDTH/2 - this->engine_target->state_manager->entity_states[0]->x * 0.025, SCREEN_HEIGHT/2 - this->engine_target->state_manager->entity_states[0]->y * 0.025);
-	this->engine_target->render_at(this->background_close, SCREEN_WIDTH/2 - this->engine_target->state_manager->entity_states[0]->x * 0.05, SCREEN_HEIGHT/2 - this->engine_target->state_manager->entity_states[0]->y * 0.05);
-	
-	for (int i = 1; i < ENGINE_MAX_ENTITIES; i++) {
-		if (this->engine_target->state_manager->entity_states[i] == NULL) {
-			
-		} else {
-			this->engine_target->state_manager->entity_states[i]->render();
-		}
-	}
-	
-	this->engine_target->state_manager->entity_states[0]->render();
-	
-	
-	lua_getglobal(this->engine_target->lua_instance, "openspace_render");
+void LuaState::_internal_render(void) {
+	lua_getglobal(this->engine_target->lua_instance, (state_prefix+std::string("_render")).c_str());
 	lua_call(this->engine_target->lua_instance, 0, 0);
 }
-void OpenSpaceState::_internal_update(std::chrono::milliseconds time_delta) {
+void LuaState::_internal_update(std::chrono::milliseconds time_delta) {
 	SDL_Event e;
-	const Uint8 *key_state = this->engine_target->state_manager->keyboard_state;
 	while( SDL_PollEvent( &e ) ){
 		if( e.type == SDL_QUIT ) this->engine_target->stop();
 		else if (e.type == SDL_KEYDOWN) {
 			if (e.key.keysym.sym == SDLK_ESCAPE) {
-				this->engine_target->state_manager->set_current_state("idleState");
-			}
-			if (e.key.keysym.sym == SDLK_F1) {
-				this->engine_target->state_manager->set_current_state("controlsState");
-			}
-			if (e.key.keysym.sym == SDLK_F10) {
-				this->render_ui = !this->render_ui;
+				this->engine_target->stop();
 			}
 		}
 	}
-	
-	for (int i = 0; i < ENGINE_MAX_ENTITIES; i++) {
-		if (this->engine_target->state_manager->entity_states[i] == NULL) {
-			
-		} else {
-			this->engine_target->state_manager->entity_states[i]->update(time_delta);
-		}
-	}
-	
-	lua_getglobal(this->engine_target->lua_instance, "openspace_update");
+	lua_getglobal(this->engine_target->lua_instance, (state_prefix+std::string("_update")).c_str());
 	lua_call(this->engine_target->lua_instance, 0, 0);
 }
 
 
-OpenSpaceState::OpenSpaceState(engine *engine_target) {
-	this->engine_target = engine_target;
-	this->controls_a = engine_target->load_image("controls_b.png");
-	this->controls_b = engine_target->load_image("controls_a.png");
-	this->background_close = engine_target->load_image("close.png");
-	this->background_far = engine_target->load_image("far.png");
-	luaL_dofile(this->engine_target->lua_instance, "openspace_init.lua");
-}
 state_machine::state_machine(engine *engine_target) {
+	this->current_state = NULL;
+	this->keyboard_state = SDL_GetKeyboardState(NULL);
+	for (int i = 0; i < 256; i++) {
+		this->last_keys[i] = false;
+	}
+	for (int i = 0; i < 256; i++) {
+		this->keys_pressed[i] = false;
+	}
 	this->engine_target = engine_target;
-	this->openSpaceState = new OpenSpaceState(engine_target);
-	this->idleState = new IdleState(engine_target);
-	this->controlsState = new ControlsState(engine_target);
-	this->statename = "idleState";
-	this->entity_states[0] = new PlayerClass(engine_target);
+	for (int i = 0; i < MAX_AVAILABLE_STATES; i++) {
+		this->states[i] = NULL;
+	}
 	for (int i = 1; i < ENGINE_MAX_ENTITIES; i++) {
 		this->entity_states[i] = NULL;
 	}
+	this->entity_states[0] = new PlayerClass(engine_target);
 }
 
-void state_machine::render(void) {
-	if (this->statename == "openSpaceState") {
-		this->openSpaceState->render();
-	} else if (this->statename == "controlsState") {
-		this->openSpaceState->render();
-		this->controlsState->render();
-	} else if (this->statename == "idleState") {
-		this->openSpaceState->render();
-		this->idleState->render();
+void state_machine::register_entity(std::string fileName, std::string id, int x, int y) {
+	for (int i = 1; i < ENGINE_MAX_ENTITIES; i++) {
+		if (this->entity_states[i] != NULL) {
+			if (this->entity_states[i]->id == id) {
+				printf("Entity '%s' already exists.\n", id.c_str());
+				return;
+			}
+		}
+	}
+	for (int i = 1; i < ENGINE_MAX_ENTITIES; i++) {
+		if (this->entity_states[i] == NULL) {
+				printf("Created entity '%s'.\n", id.c_str());
+			this->entity_states[i] = new entity(fileName, id, x, y, this->engine_target);
+			return;
+		}
+	}
+}
+void state_machine::destroy_entity(std::string id) {
+	for (int i = 0; i < ENGINE_MAX_ENTITIES; i++) {
+		if (this->entity_states[i] != NULL) {
+			if (this->entity_states[i]->id == id) {
+				this->entity_states[i]->id = "";
+				this->entity_states[i]->texture_id = "";
+				this->entity_states[i]->engine_target = NULL;
+				this->entity_states[i] = NULL;
+				printf("Destroyed entity '%s'.\n", id.c_str());
+				return;
+			}
+		}
+	}
+}
+entity *state_machine::get_entity(std::string id) {
+	for (int i = 0; i < ENGINE_MAX_ENTITIES; i++) {
+		if (this->entity_states[i] != NULL) {
+			if (this->entity_states[i]->id == id) {
+				return this->entity_states[i];
+			}
+		}
+	}
+	return NULL;
+}
+void state_machine::update_entities(void) {
+	for (int i = 1; i < ENGINE_MAX_ENTITIES; i++) {
+		if (this->entity_states[i] != NULL) {
+			this->entity_states[i]->update(this->last_time_delta);
+		}
+	}
+}
+void state_machine::render_entities(void) {
+	for (int i = 1; i < ENGINE_MAX_ENTITIES; i++) {
+		if (this->entity_states[i] != NULL) {
+			this->entity_states[i]->render();
+		}
 	}
 }
 
 void state_machine::update(std::chrono::milliseconds time_delta) {
+	this->last_time_delta = time_delta;
 	this->keyboard_state = SDL_GetKeyboardState(NULL);
-	if (this->statename == "openSpaceState") {
-		this->openSpaceState->update(time_delta);
-	} else if (this->statename == "controlsState") {
-		this->controlsState->update(time_delta);
-	} else if (this->statename == "idleState") {
-		this->idleState->update(time_delta);
+	for (int i = 0; i < 256; i++) {
+		this->keys_pressed[i] = false;
+		this->keys_released[i] = false;
+		if (this->keyboard_state[i] != this->last_keys[i]) {
+			if (this->last_keys[i]) {
+				this->keys_released[i] = true;
+			} else {
+				this->keys_pressed[i] = true;
+			}
+		}
+		this->last_keys[i] = this->keyboard_state[i];
+	}
+	this->current_state->update(time_delta);
+}
+
+void state_machine::render(void) {
+	this->current_state->render();
+}
+
+void state_machine::set_current_state(std::string id) {
+	for (int i = 0; i < MAX_AVAILABLE_STATES; i++) {
+		if (this->states[i] != NULL) {
+			if (this->states[i]->state_prefix == id) {
+				if (this->current_state != NULL) {
+					this->current_state->unload();
+				}
+				this->current_state = this->states[i];
+				this->current_state->load();
+				return;
+			}
+		}
 	}
 }
 
-void state_machine::set_current_state(std::string state) {
-	this->statename = state;
-	if (this->statename == "openSpaceState") {
-		this->openSpaceState->render_ui = false;
-	} else if (this->statename == "controlsState") {
-		this->openSpaceState->render_ui = false;
-	} else if (this->statename == "idleState") {
-		this->openSpaceState->render_ui = false;
+void state_machine::register_state(std::string file, std::string name) {
+	for (int i = 0; i < MAX_AVAILABLE_STATES; i++) {
+		if (this->states[i] != NULL) {
+			if (this->states[i]->state_prefix == name) {
+				return;
+			}
+		}
+	}
+	for (int i = 0; i < MAX_AVAILABLE_STATES; i++) {
+		if (this->states[i] == NULL) {
+			this->states[i] = new LuaState(this->engine_target, file, name);
+			return;
+		}
 	}
 }
