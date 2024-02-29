@@ -19,9 +19,9 @@ void entity::_internal_render(void) {
 	SDL_Point size = getsize(texture);
 
 	if (this->direct_movement){
-		this->engine_target->render_direct(this->texture_id, x, y, size.x, size.y, 0);	
+		this->engine_target->render_direct(this->texture_id, x, y, size.x, size.y, true, 0);	
 	} else {
-		this->engine_target->render_direct(this->texture_id, x, y, size.x, size.y, this->rotation);
+		this->engine_target->render_direct(this->texture_id, x, y, size.x, size.y, true, this->rotation);
 	}
 }
 void entity::_internal_update(std::chrono::milliseconds time_delta) {
@@ -125,9 +125,9 @@ void  PlayerClass::_internal_render(void) {
 	SDL_Texture *texture = this->engine_target->get_texture(this->texture_id);
 	SDL_Point size = getsize(texture);
 	if (this->direct_movement){
-		this->engine_target->render_direct(this->texture_id, SCREEN_WIDTH/2, SCREEN_HEIGHT/2, size.x, size.y, 0);	
+		this->engine_target->render_direct(this->texture_id, SCREEN_WIDTH/2, SCREEN_HEIGHT/2, size.x, size.y, true, 0);	
 	} else {
-		this->engine_target->render_direct(this->texture_id, SCREEN_WIDTH/2, SCREEN_HEIGHT/2, size.x, size.y, this->rotation);
+		this->engine_target->render_direct(this->texture_id, SCREEN_WIDTH/2, SCREEN_HEIGHT/2, size.x, size.y, true, this->rotation);
 	}
 }
 void  PlayerClass::_internal_update(std::chrono::milliseconds time_delta) {

@@ -50,6 +50,7 @@ SDL_Point getsize(SDL_Texture *texture) {
     SDL_QueryTexture(texture, NULL, NULL, &size.x, &size.y);
     return size;
 }
+
 int lua_load_background_far(lua_State *lua_instance) {
 	const char *image_path = lua_tolstring(lua_instance, 1, NULL);
 	SDL_Texture* loaded_image = l_engine->load_image(std::string(image_path));
@@ -62,12 +63,14 @@ int lua_load_background_far(lua_State *lua_instance) {
 	
 	return 0;
 }
+
 int lua_render_background_far(lua_State *lua_instance) {
 	
-	l_engine->render_at(background_far, SCREEN_WIDTH/2 - l_engine->state_manager->entity_states[0]->x * 0.025, SCREEN_HEIGHT/2 - l_engine->state_manager->entity_states[0]->y * 0.025, 0, 0, 0);
+	l_engine->render_at(background_far, SCREEN_WIDTH/2 - l_engine->state_manager->entity_states[0]->x * 0.025, SCREEN_HEIGHT/2 - l_engine->state_manager->entity_states[0]->y * 0.025, 0, 0, true, 0);
 
 	return 0;
 }
+
 int lua_register_texture(lua_State *lua_instance) {
 	std::string id = std::string(lua_tolstring(lua_instance, 1, NULL));
 	std::string file = std::string(lua_tolstring(lua_instance, 2, NULL));
@@ -76,6 +79,7 @@ int lua_register_texture(lua_State *lua_instance) {
 	
 	return 0;
 }
+
 int lua_register_font(lua_State *lua_instance) {
 	std::string id = std::string(lua_tolstring(lua_instance, 1, NULL));
 	std::string file = std::string(lua_tolstring(lua_instance, 2, NULL));
@@ -85,27 +89,17 @@ int lua_register_font(lua_State *lua_instance) {
 	
 	return 0;
 }
+
 int lua_render_direct(lua_State *lua_instance) {
 	std::string id = std::string(lua_tolstring(lua_instance, 1, NULL));
 	int x = lua_tonumber(lua_instance, 2);
 	int y = lua_tonumber(lua_instance, 3);
 	double sx = lua_tonumber(lua_instance, 4);
 	double sy = lua_tonumber(lua_instance, 5);
-	double r = lua_tonumber(lua_instance, 6);
+	bool centered = lua_toboolean(lua_instance, 6);
+	double r = lua_tonumber(lua_instance, 7);
 	
-	l_engine->render_direct(id, x, y, sx, sy, r);
-	
-	return 0;
-}
-int lua_render_direct_scale(lua_State *lua_instance) {
-	std::string id = std::string(lua_tolstring(lua_instance, 1, NULL));
-	int x = lua_tonumber(lua_instance, 2);
-	int y = lua_tonumber(lua_instance, 3);
-	int sx = lua_tonumber(lua_instance, 4);
-	int sy = lua_tonumber(lua_instance, 5);
-	
-	
-	l_engine->render_at_scale(l_engine->get_texture(id), x, y, sx, sy, false);
+	l_engine->render_direct(id, x, y, sx, sy, centered, r);
 	
 	return 0;
 }
@@ -128,12 +122,14 @@ int lua_render_text(lua_State *lua_instance) {
 	int r = lua_tonumber(lua_instance, 5);
 	int g = lua_tonumber(lua_instance, 6);
 	int b = lua_tonumber(lua_instance, 7);
+	bool centered = lua_toboolean(lua_instance, 8);
 	
-	l_engine->render_text(font, text, x, y, r, g, b);
+	l_engine->render_text(font, text, x, y, r, g, b, centered);
 	
 	//this->render_text(text, x, y, r, g, b);
 	return 0;
 }
+
 int lua_register_entity(lua_State *lua_instance) {
 	int args = lua_gettop(lua_instance);
 	
@@ -148,6 +144,7 @@ int lua_register_entity(lua_State *lua_instance) {
 	//this->render_text(text, x, y, r, g, b);
 	return 0;
 }
+
 int lua_destroy_entity(lua_State *lua_instance) {
 	int args = lua_gettop(lua_instance);
 	
@@ -158,12 +155,14 @@ int lua_destroy_entity(lua_State *lua_instance) {
 	//this->render_text(text, x, y, r, g, b);
 	return 0;
 }
+
 int lua_render_entities(lua_State *lua_instance) {
 	l_engine->state_manager->render_entities();
 	
 	//this->render_text(text, x, y, r, g, b);
 	return 0;
 }
+
 int lua_update_entities(lua_State *lua_instance) {
 	l_engine->state_manager->update_entities();
 	
@@ -179,6 +178,7 @@ int lua_get_key_pressed(lua_State *lua_instance) {
 	
 	return 1;
 }
+
 int lua_get_key_down(lua_State *lua_instance) {
 	SDL_Keycode check;
 	const char *key = lua_tolstring(lua_instance, 1, NULL);
@@ -202,12 +202,14 @@ int lua_entity_get_position(lua_State *lua_instance) {
 	
 	return 2;
 }
+
 int lua_player_get_velocity(lua_State *lua_instance) {
 	lua_pushnumber(lua_instance, l_engine->state_manager->entity_states[0]->vx);
 	lua_pushnumber(lua_instance, l_engine->state_manager->entity_states[0]->vy);
 	
 	return 2;
 }
+
 int lua_entity_get_velocity(lua_State *lua_instance) {
 	std::string id = std::string(lua_tolstring(lua_instance, 1, NULL));
 	
@@ -222,11 +224,13 @@ int lua_entity_get_velocity(lua_State *lua_instance) {
 	
 	return 2;
 }
+
 int lua_player_get_rotation(lua_State *lua_instance) {
 	lua_pushnumber(lua_instance, l_engine->state_manager->entity_states[0]->rotation);
 
 	return 1;
 }
+
 int lua_entity_get_rotation(lua_State *lua_instance) {
 	std::string id = std::string(lua_tolstring(lua_instance, 1, NULL));
 	
@@ -239,6 +243,7 @@ int lua_entity_get_rotation(lua_State *lua_instance) {
 	
 	return 1;
 }
+
 int lua_entity_get_velocity_angle(lua_State *lua_instance) {
 	std::string id = std::string(lua_tolstring(lua_instance, 1, NULL));
 	
@@ -255,7 +260,8 @@ int lua_entity_get_velocity_angle(lua_State *lua_instance) {
 int lua_player_apply_forward_force(lua_State *lua_instance) {
 	l_engine->state_manager->entity_states[0]->apply_forward_force(lua_tonumber(lua_instance, 1));
 	return 0;
-}		
+}
+	
 int lua_entity_apply_forward_force(lua_State *lua_instance) {
 	std::string id = std::string(lua_tolstring(lua_instance, 1, NULL));
 	
@@ -265,12 +271,14 @@ int lua_entity_apply_forward_force(lua_State *lua_instance) {
 	}
 	return 0;
 }
+
 int lua_register_lua_gamestate(lua_State *lua_instance) {
 	std::string file = std::string(lua_tolstring(lua_instance, 1, NULL));
 	std::string name = std::string(lua_tolstring(lua_instance, 2, NULL));
 	l_engine->state_manager->register_state(file, name);
 	return 0;
 }
+
 int lua_set_gamestate(lua_State *lua_instance) {
 	std::string name = std::string(lua_tolstring(lua_instance, 1, NULL));
 	l_engine->state_manager->set_current_state(name);
@@ -289,6 +297,7 @@ int lua_player_set_velocity(lua_State *lua_instance) {
 	//this->render_text(text, x, y, r, g, b);
 	return 0;
 }
+
 int lua_player_set_position(lua_State *lua_instance) {
 	int args = lua_gettop(lua_instance);
 	
@@ -301,6 +310,7 @@ int lua_player_set_position(lua_State *lua_instance) {
 	//this->render_text(text, x, y, r, g, b);
 	return 0;
 }
+
 int lua_entity_set_position(lua_State *lua_instance) {
 	std::string id = std::string(lua_tolstring(lua_instance, 1, NULL));
 	double x = lua_tonumber(lua_instance, 2);
@@ -314,6 +324,7 @@ int lua_entity_set_position(lua_State *lua_instance) {
 	
 	return 0;
 }
+
 int lua_player_set_rotation(lua_State *lua_instance) {
 	int args = lua_gettop(lua_instance);
 	
@@ -323,6 +334,7 @@ int lua_player_set_rotation(lua_State *lua_instance) {
 	//this->render_text(text, x, y, r, g, b);
 	return 0;
 }
+
 int lua_entity_set_rotation(lua_State *lua_instance) {
 	std::string id = std::string(lua_tolstring(lua_instance, 1, NULL));
 	double rotation = lua_tonumber(lua_instance, 2);
@@ -334,6 +346,7 @@ int lua_entity_set_rotation(lua_State *lua_instance) {
 	
 	return 0;
 }
+
 int lua_entity_set_texture(lua_State *lua_instance) {
 	std::string id = std::string(lua_tolstring(lua_instance, 1, NULL));
 	std::string texture = std::string(lua_tolstring(lua_instance, 2, NULL));
@@ -345,6 +358,7 @@ int lua_entity_set_texture(lua_State *lua_instance) {
 	
 	return 0;
 }
+
 int lua_entity_reset_texture(lua_State *lua_instance) {
 	std::string id = std::string(lua_tolstring(lua_instance, 1, NULL));
 	
@@ -355,6 +369,7 @@ int lua_entity_reset_texture(lua_State *lua_instance) {
 	
 	return 0;
 }
+
 int lua_entity_set_direct_movement(lua_State *lua_instance) {
 	std::string id = std::string(lua_tolstring(lua_instance, 1, NULL));
 	bool enabled = lua_toboolean(lua_instance, 2);
@@ -371,6 +386,7 @@ int lua_player_render(lua_State *lua_instance) {
 	l_engine->state_manager->entity_states[0]->render();
 	return 0;
 }
+
 int lua_player_update(lua_State *lua_instance) {
 	l_engine->state_manager->entity_states[0]->update(std::chrono::milliseconds(30));
 	return 0;
@@ -414,6 +430,7 @@ void engine::register_texture(std::string name, std::string filepath) {
 		}
 	}
 }
+
 void engine::register_font(std::string name, std::string filepath, int size) {
 	for (int i = 0; i < ENGINE_MAX_FONTS; i++) {
 		if (this->fonts[i] != NULL) {
@@ -437,7 +454,6 @@ void engine::register_font(std::string name, std::string filepath, int size) {
 	}
 }
 
-
 int lua_register_sub_texture(lua_State *lua_instance) {
 	std::string id = std::string(lua_tolstring(lua_instance, 1, NULL));
 	std::string file = std::string(lua_tolstring(lua_instance, 2, NULL));
@@ -449,6 +465,7 @@ int lua_register_sub_texture(lua_State *lua_instance) {
 	
 	return 0;
 }
+
 void engine::register_sub_texture(std::string id, std::string texture_id, int sub_w, int sub_h, int sub_x, int sub_y) {
 	bool texture_found = false;
 	for (int i = 0; i < ENGINE_MAX_SUB_TEXTURES; i++) {
@@ -487,6 +504,7 @@ void engine::register_sub_texture(std::string id, std::string texture_id, int su
 		}
 	}
 }
+
 SDL_Texture* engine::get_texture(std::string name) {
 	for (int i = 0; i < ENGINE_MAX_TEXTURES; i++) {
 		if (this->textures[i] != NULL) {
@@ -498,6 +516,7 @@ SDL_Texture* engine::get_texture(std::string name) {
 	printf("Texture '%s' could not be found\n", name.c_str());
 	return NULL;
 }
+
 TTF_Font* engine::get_font(std::string name) {
 	for (int i = 0; i < ENGINE_MAX_TEXTURES; i++) {
 		if (this->fonts[i] != NULL) {
@@ -519,12 +538,12 @@ TTF_Font* engine::load_font(std::string path, int size) {
     return new_font;
 }
 
-void engine::render_text(std::string font_id, std::string text, int x, int y, int r, int g, int b) {
+void engine::render_text(std::string font_id, std::string text, int x, int y, int r, int g, int b, bool centered) {
 	SDL_Color text_color = {r,g,b};
 	SDL_Surface* textSurface = TTF_RenderText_Solid( this->get_font(font_id), text.c_str(), text_color);
 	SDL_Texture* loaded_texture = SDL_CreateTextureFromSurface(this->renderer, textSurface);
 	SDL_Point size = getsize(loaded_texture);
-	this->render_at(loaded_texture, x, y, size.x, size.y, 0);
+	this->render_at(loaded_texture, x, y, size.x, size.y, centered, 0);
 	SDL_FreeSurface(textSurface);
 	SDL_DestroyTexture(loaded_texture);
 }
@@ -592,31 +611,50 @@ void engine::update_function(void) {
 	fflush(stdout);
 	this->state_manager->update(std::chrono::milliseconds(30));
 }
+
 void engine::render_function(void) {
 	SDL_RenderClear(this->renderer);
 	this->state_manager->render();
 	SDL_RenderPresent(this->renderer);
 }
-void engine::render_at(SDL_Texture* surface, int x, int y, double sx, double sy, const double angle) {
+
+void engine::render_at(SDL_Texture* surface, int x, int y, double sx, double sy, bool centered, const double angle) {
 	SDL_Rect target_rect;
 	SDL_Point size = getsize(surface);
 	if (sx != 0) {
 		target_rect.w = sx;
-		target_rect.x = x - (sx) / 2;
+		if (centered) {
+			target_rect.x = x - (sx) / 2;
+		} else {
+			target_rect.x = x;
+		}
 	} else {
 		target_rect.w = size.x;
-		target_rect.x = x - (size.x) /2;
+		if (centered) {
+			target_rect.x = x - (size.x) /2;
+		} else {
+			target_rect.x = x;
+		}
 	}
 	if (sy != 0) {
 		target_rect.h = sy;
-		target_rect.y = y - (sy) / 2;
+		if (centered) {
+			target_rect.y = y - (sy) / 2;
+		} else {
+			target_rect.y = y;
+		}
 	} else {
 		target_rect.h = size.y;
-		target_rect.y = y - (size.y) /2;
+		if (centered) {
+			target_rect.y = y - (size.y) /2;
+		} else {
+			target_rect.y = y;
+		}
 	}
 	SDL_RenderCopyEx(this->renderer, surface, NULL, &target_rect, angle, NULL, SDL_FLIP_NONE);
 }
-void engine::render_sub_texture(sub_texture *texture, int x, int y, double sx, double sy, const double angle) {
+
+void engine::render_sub_texture(sub_texture *texture, int x, int y, double sx, double sy, bool centered, const double angle) {
 	SDL_Rect source_rect;
 	source_rect.x = texture->s_x;
 	source_rect.y = texture->s_y;
@@ -626,26 +664,42 @@ void engine::render_sub_texture(sub_texture *texture, int x, int y, double sx, d
 	SDL_Point size = getsize(this->get_texture(texture->texture_resource));
 	if (sx != 0) {
 		target_rect.w = sx;
-		target_rect.x = x - (sx) / 2;
+		if (centered) {
+			target_rect.x = x - (sx) / 2;
+		} else {
+			target_rect.x = x;
+		}
 	} else {
 		target_rect.w = size.x;
-		target_rect.x = x - (size.x) /2;
+		if (centered) {
+			target_rect.x = x - (size.x) /2;
+		} else {
+			target_rect.x = x;
+		}
 	}
 	if (sy != 0) {
 		target_rect.h = sy;
-		target_rect.y = y - (sy) / 2;
+		if (centered) {
+			target_rect.y = y - (sy) / 2;
+		} else {
+			target_rect.y = y;
+		}
 	} else {
 		target_rect.h = size.y;
-		target_rect.y = y - (size.y) /2;
+		if (centered) {
+			target_rect.y = y - (size.y) /2;
+		} else {
+			target_rect.y = y;
+		}
 	}
 	SDL_RenderCopyEx(this->renderer, this->get_texture(texture->texture_resource), &source_rect, &target_rect, angle, NULL, SDL_FLIP_NONE);
 }
 
-void engine::render_direct(std::string id, int x, int y, double sx, double sy, const double angle) {
+void engine::render_direct(std::string id, int x, int y, double sx, double sy, bool centered, const double angle) {
 	for (int i = 0; i < ENGINE_MAX_SUB_TEXTURES; i++) {
 		if (l_engine->sub_textures[i] != NULL) {
 			if (l_engine->sub_textures[i]->id == id) {
-				l_engine->render_sub_texture(l_engine->sub_textures[i], x, y, sx, sy, angle);
+				l_engine->render_sub_texture(l_engine->sub_textures[i], x, y, sx, sy, centered, angle);
 				return;
 			}
 		}
@@ -655,48 +709,13 @@ void engine::render_direct(std::string id, int x, int y, double sx, double sy, c
 	texture = l_engine->get_texture(id);
 	
 	if (texture != NULL) {
-		l_engine->render_at(texture, x, y, sx, sy, angle);
+		l_engine->render_at(texture, x, y, sx, sy, centered, angle);
 	}
 }
 
-void engine::render_fill(SDL_Texture* surface) {
-	SDL_RenderCopy(this->renderer, surface, NULL, NULL);
-}
-void engine::render_at_scale(SDL_Texture* surface, int x, int y, double sx, double sy, bool divide) {
-	SDL_Rect target_rect;
-	SDL_Point size = getsize(surface);
-	if (divide){
-		target_rect.x = x - (size.x / sx) / 2;
-		target_rect.y = y - (size.y / sy) / 2;
-		target_rect.w = size.x / sx;
-		target_rect.h = size.y / sy;
-	} else {
-		target_rect.x = x - (size.x * sx) / 2;
-		target_rect.y = y - (size.y * sy) / 2;
-		target_rect.w = size.x * sx;
-		target_rect.h = size.y * sy;
-	}
-	SDL_RenderCopy(this->renderer, surface, NULL, &target_rect);
-}
-void engine::render_at_scale_rotate(SDL_Texture* surface, int x, int y, double sx, double sy, bool divide, const double angle) {
-	SDL_Rect target_rect;
-	SDL_Point size = getsize(surface);
-	if (divide){
-		target_rect.x = x - (size.x / sx) / 2;
-		target_rect.y = y - (size.y / sy) / 2;
-		target_rect.w = size.x / sx;
-		target_rect.h = size.y / sy;
-	} else {
-		target_rect.x = x - (size.x * sx) / 2;
-		target_rect.y = y - (size.y * sy) / 2;
-		target_rect.w = size.x * sx;
-		target_rect.h = size.y * sy;
-	}
-	SDL_RenderCopyEx(this->renderer, surface, NULL, &target_rect, angle, NULL, SDL_FLIP_NONE);
-}
 void engine::render_logo(void) {
 	SDL_RenderClear(this->renderer);
-	this->render_at(this->load_logo, SCREEN_WIDTH /2 , SCREEN_HEIGHT /2, 256, 256, 0);
+	this->render_at(this->load_logo, SCREEN_WIDTH /2 , SCREEN_HEIGHT /2, 256, 256, true, 0);
 	SDL_RenderPresent(this->renderer);
 }
 
@@ -735,7 +754,6 @@ void engine::begin(void) {
 		lua_register(this->lua_instance, "set_state", lua_set_gamestate);
 		lua_register(this->lua_instance, "render_text", lua_render_text);
 		lua_register(this->lua_instance, "render_player", lua_player_render);
-		lua_register(this->lua_instance, "render_direct_scale", lua_render_direct_scale);
 		lua_register(this->lua_instance, "render_direct", lua_render_direct);
 		lua_register(this->lua_instance, "register_font", lua_register_font);
 		lua_register(this->lua_instance, "register_texture", lua_register_texture);
