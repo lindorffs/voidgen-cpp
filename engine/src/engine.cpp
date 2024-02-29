@@ -17,6 +17,12 @@ engine *l_engine = NULL;
 SDL_Texture* background_far = NULL;
 SDL_Texture* background_close = NULL;
 
+font::font(std::string id, std::string filename, int size) {
+	this->id = id;
+	this->filename = filename;
+	this->_font = l_engine->load_font(filename, size);
+}
+
 texture_resource::~texture_resource() {
 	this->id = "";
 	this->file = "";
@@ -70,6 +76,15 @@ int lua_register_texture(lua_State *lua_instance) {
 	
 	return 0;
 }
+int lua_register_font(lua_State *lua_instance) {
+	std::string id = std::string(lua_tolstring(lua_instance, 1, NULL));
+	std::string file = std::string(lua_tolstring(lua_instance, 2, NULL));
+	int size = lua_tonumber(lua_instance, 3);
+	
+	l_engine->register_font(id, file, size);
+	
+	return 0;
+}
 int lua_render_direct(lua_State *lua_instance) {
 	std::string id = std::string(lua_tolstring(lua_instance, 1, NULL));
 	int x = lua_tonumber(lua_instance, 2);
@@ -105,15 +120,16 @@ int lua_get_screen_dimensions(lua_State *lua_instance) {
 int lua_render_text(lua_State *lua_instance) {
 	int args = lua_gettop(lua_instance);
 	
-	const char *text = lua_tolstring(lua_instance, 1, NULL);
+	const char *font = lua_tolstring(lua_instance, 1, NULL);
+	const char *text = lua_tolstring(lua_instance, 2, NULL);
 	
-	int x = lua_tonumber(lua_instance, 2);
-	int y = lua_tonumber(lua_instance, 3);
-	int r = lua_tonumber(lua_instance, 4);
-	int g = lua_tonumber(lua_instance, 5);
-	int b = lua_tonumber(lua_instance, 6);
+	int x = lua_tonumber(lua_instance, 3);
+	int y = lua_tonumber(lua_instance, 4);
+	int r = lua_tonumber(lua_instance, 5);
+	int g = lua_tonumber(lua_instance, 6);
+	int b = lua_tonumber(lua_instance, 7);
 	
-	l_engine->render_text(text, x, y, r, g, b);
+	l_engine->render_text(font, text, x, y, r, g, b);
 	
 	//this->render_text(text, x, y, r, g, b);
 	return 0;
@@ -398,6 +414,28 @@ void engine::register_texture(std::string name, std::string filepath) {
 		}
 	}
 }
+void engine::register_font(std::string name, std::string filepath, int size) {
+	for (int i = 0; i < ENGINE_MAX_FONTS; i++) {
+		if (this->fonts[i] != NULL) {
+			if (this->fonts[i]->id == name) {
+				printf("Font %s already loaded\n", name.c_str());
+				return;
+			}
+		}
+	}
+	for (int i = 0; i < ENGINE_MAX_FONTS; i++) {
+		if (this->fonts[i] == NULL) {
+			this->fonts[i] = new font(name, filepath, size);
+			if (this->fonts[i]->_font == NULL) {
+				this->fonts[i] = NULL;
+				printf("Failed to create texture %s from %s\n", name.c_str(), filepath.c_str());
+			} else {
+				printf("Created texture %s from %s\n", name.c_str(), filepath.c_str());
+			}
+			return;
+		}
+	}
+}
 
 
 int lua_register_sub_texture(lua_State *lua_instance) {
@@ -460,6 +498,17 @@ SDL_Texture* engine::get_texture(std::string name) {
 	printf("Texture '%s' could not be found\n", name.c_str());
 	return NULL;
 }
+TTF_Font* engine::get_font(std::string name) {
+	for (int i = 0; i < ENGINE_MAX_TEXTURES; i++) {
+		if (this->fonts[i] != NULL) {
+			if (this->fonts[i]->id == name) {
+				return this->fonts[i]->_font;
+			}
+		}
+	}
+	printf("Font '%s' could not be found\n", name.c_str());
+	return NULL;
+}
 
 TTF_Font* engine::load_font(std::string path, int size) {
 	TTF_Font* new_font = TTF_OpenFont( path.c_str(), size );
@@ -470,9 +519,9 @@ TTF_Font* engine::load_font(std::string path, int size) {
     return new_font;
 }
 
-void engine::render_text(std::string text, int x, int y, int r, int g, int b) {
+void engine::render_text(std::string font_id, std::string text, int x, int y, int r, int g, int b) {
 	SDL_Color text_color = {r,g,b};
-	SDL_Surface* textSurface = TTF_RenderText_Solid( this->global_font, text.c_str(), text_color);
+	SDL_Surface* textSurface = TTF_RenderText_Solid( this->get_font(font_id), text.c_str(), text_color);
 	SDL_Texture* loaded_texture = SDL_CreateTextureFromSurface(this->renderer, textSurface);
 	SDL_Point size = getsize(loaded_texture);
 	this->render_at(loaded_texture, x, y, size.x, size.y, 0);
@@ -522,7 +571,6 @@ engine::engine() {
 		}
 	}
 	if (this->initialized) {
-		this->global_font = this->load_font("AVA.ttf", 32);
 		this->load_logo = this->load_image("./logo.png");
 		this->render_logo();
 		printf("Engine Initialized\n");
@@ -534,6 +582,9 @@ engine::engine() {
 	}
 	for (int i = 0; i < ENGINE_MAX_SUB_TEXTURES; i++) {
 		this->sub_textures[i] = NULL;
+	}
+	for (int i = 0; i < ENGINE_MAX_FONTS; i++) {
+		this->fonts[i] = NULL;
 	}
 }
 
@@ -646,7 +697,6 @@ void engine::render_at_scale_rotate(SDL_Texture* surface, int x, int y, double s
 void engine::render_logo(void) {
 	SDL_RenderClear(this->renderer);
 	this->render_at(this->load_logo, SCREEN_WIDTH /2 , SCREEN_HEIGHT /2, 256, 256, 0);
-	this->render_text("Loading Rabbits", SCREEN_WIDTH /2 , SCREEN_HEIGHT /2+132, 0,255,0);
 	SDL_RenderPresent(this->renderer);
 }
 
@@ -687,6 +737,7 @@ void engine::begin(void) {
 		lua_register(this->lua_instance, "render_player", lua_player_render);
 		lua_register(this->lua_instance, "render_direct_scale", lua_render_direct_scale);
 		lua_register(this->lua_instance, "render_direct", lua_render_direct);
+		lua_register(this->lua_instance, "register_font", lua_register_font);
 		lua_register(this->lua_instance, "register_texture", lua_register_texture);
 		lua_register(this->lua_instance, "register_sub_texture", lua_register_sub_texture);
 		lua_register(this->lua_instance, "update_player", lua_player_update);
