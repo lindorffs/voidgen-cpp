@@ -84,20 +84,16 @@ class engine {
 	
 	void begin(void);
 	void stop(void);
-	void render_fill(SDL_Texture* surface);
-	void render_at(SDL_Texture*, int x, int y, double sx, double sy, const double angle);
-	void render_sub_texture(sub_texture*, int x, int y, double sx, double sy, const double angle);
-	void render_direct(std::string texture_id, int x, int y, double sx, double sy, const double angle);
-	void render_left(SDL_Texture*, int x, int y);
-	void render_at_scale(SDL_Texture*, int x, int y, double sx, double sy, bool divide);
-	void render_at_scale_rotate(SDL_Texture*, int x, int y, double sx, double sy, bool divide, const double angle);
+	void render_at(SDL_Texture*, int x, int y, double sx, double sy, bool centered, const double angle);
+	void render_sub_texture(sub_texture*, int x, int y, double sx, double sy, bool centered, const double angle);
+	void render_direct(std::string texture_id, int x, int y, double sx, double sy, bool centered, const double angle);
 	
 	void register_texture(std::string name, std::string filepath);
 	void register_font(std::string name, std::string filepath, int size);
 	void register_sub_texture(std::string id, std::string texture_id, int sub_w, int sub_h, int sub_x, int sub_y);
 	SDL_Texture* get_texture(std::string id);
 	TTF_Font* get_font(std::string);
-	void render_text(std::string, std::string string, int x, int y, int r, int g, int b);
+	void render_text(std::string, std::string string, int x, int y, int r, int g, int b, bool centered);
 	
 	SDL_Texture* load_image(std::string path);
 	TTF_Font *load_font(std::string path, int size);
