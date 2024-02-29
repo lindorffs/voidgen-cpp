@@ -9,6 +9,7 @@
 
 #define ENGINE_MAX_ENTITIES 512
 #define ENGINE_MAX_TEXTURES 512
+#define ENGINE_MAX_FONTS 512
 #define ENGINE_MAX_SUB_TEXTURES 512
 
 extern "C" {
@@ -43,6 +44,16 @@ public:
 	sub_texture(std::string id, std::string texture_resource, int w, int h, int x, int y);
 };
 
+class font {
+	public:
+	std::string id = "";
+	std::string filename = "";
+	TTF_Font* _font = NULL;
+	~font();
+	font();
+	font(std::string id, std::string filename, int);
+};
+
 class engine {
 	private:
 		bool running = false;
@@ -61,6 +72,7 @@ class engine {
 		
 		SDL_Texture* load_logo = NULL;
 		texture_resource *textures[ENGINE_MAX_TEXTURES];
+		font *fonts[ENGINE_MAX_FONTS];
 	public:
 		sub_texture *sub_textures[ENGINE_MAX_SUB_TEXTURES];
 		TTF_Font *global_font = NULL;
@@ -81,9 +93,11 @@ class engine {
 	void render_at_scale_rotate(SDL_Texture*, int x, int y, double sx, double sy, bool divide, const double angle);
 	
 	void register_texture(std::string name, std::string filepath);
+	void register_font(std::string name, std::string filepath, int size);
 	void register_sub_texture(std::string id, std::string texture_id, int sub_w, int sub_h, int sub_x, int sub_y);
 	SDL_Texture* get_texture(std::string id);
-	void render_text(std::string string, int x, int y, int r, int g, int b);
+	TTF_Font* get_font(std::string);
+	void render_text(std::string, std::string string, int x, int y, int r, int g, int b);
 	
 	SDL_Texture* load_image(std::string path);
 	TTF_Font *load_font(std::string path, int size);
