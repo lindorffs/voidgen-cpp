@@ -15,7 +15,7 @@ LIBRARY_PATHS = -L./lua/lua-5.3/src -L./mingw-dev/lib -L./lua/src
 COMPILER_FLAGS = -w -Wl,-subsystem,windows
 
 #LINKER_FLAGS specifies the libraries we're linking against
-LINKER_FLAGS = -static-libstdc++ -static-libgcc -Wl,-Bstatic -lstdc++ -lpthread -Wl,-Bdynamic -lmingw32 -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -llua53
+LINKER_FLAGS = -static-libstdc++ -static-libgcc -Wl,-Bstatic -lstdc++ -lpthread -Wl,-Bdynamic -lmingw32 -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_mixer -llua53
 
 #OBJ_NAME specifies the name of our exectuable
 OBJ_NAME = voidGEN
