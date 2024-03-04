@@ -18,8 +18,8 @@ int player_x = 0;
 int player_y = 0;
 
 //Screen dimension constants
-const int SCREEN_WIDTH = 1600;
-const int SCREEN_HEIGHT = 900;
+extern int SCREEN_WIDTH;
+extern int SCREEN_HEIGHT;
 
 
 void State::render(void) {

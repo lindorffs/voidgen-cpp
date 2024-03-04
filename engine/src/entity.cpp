@@ -10,8 +10,8 @@ constexpr double radToDeg(double rad) { return rad*(180/PI); }
 extern engine *l_engine;
 extern SDL_Point getsize(SDL_Texture*);
 //Screen dimension constants
-const int SCREEN_WIDTH = 1600;
-const int SCREEN_HEIGHT = 900;
+extern int SCREEN_WIDTH;
+extern int SCREEN_HEIGHT;
 void entity::_internal_render(void) {
 	SDL_Texture *texture = this->engine_target->get_texture(this->texture_id);
 	int x = SCREEN_WIDTH/2 + this->x - this->engine_target->state_manager->entity_states[0]->x;

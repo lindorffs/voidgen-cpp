@@ -5,8 +5,8 @@
 
 #include <SDL.h>
 //Screen dimension constants
-const int SCREEN_WIDTH = 1600;
-const int SCREEN_HEIGHT = 900;
+int SCREEN_WIDTH = 400;
+int SCREEN_HEIGHT = 400;
 
 int bg_r = 0x01;
 int bg_g = 0x01;
@@ -35,6 +35,35 @@ texture_resource::texture_resource(std::string id, std::string file) {
 	this->file = file;
 	this->texture = l_engine->load_image(file);
 }
+
+
+sound_resource::~sound_resource() {
+	this->id = "";
+	this->file = "";
+	Mix_FreeChunk(this->sound);
+	this->sound = NULL;
+}
+sound_resource::sound_resource() {}
+sound_resource::sound_resource(std::string id, std::string file) {
+	this->id = id;
+	this->file = file;
+	this->sound = Mix_LoadWAV(file.c_str());
+}
+
+music_resource::~music_resource() {
+	this->id = "";
+	this->file = "";
+	Mix_FreeMusic(this->sound);
+	this->sound = NULL;
+}
+music_resource::music_resource() {}
+music_resource::music_resource(std::string id, std::string file) {
+	this->id = id;
+	this->file = file;
+	this->sound = Mix_LoadMUS(file.c_str());
+}
+
+
 sub_texture::sub_texture() {}
 sub_texture::sub_texture(std::string id, std::string texture_resource, int w, int h, int x, int y) {
 	this->id = id;
@@ -79,6 +108,56 @@ int lua_register_texture(lua_State *lua_instance) {
 	
 	return 0;
 }
+int lua_register_sound(lua_State *lua_instance) {
+	std::string id = std::string(lua_tolstring(lua_instance, 1, NULL));
+	std::string file = std::string(lua_tolstring(lua_instance, 2, NULL));
+	
+	l_engine->register_sound(id, file);
+	
+	return 0;
+}
+int lua_play_sound(lua_State *lua_instance) {
+	std::string id = std::string(lua_tolstring(lua_instance, 1, NULL));
+	
+	l_engine->play_sound(id);
+	
+	return 0;
+}
+int lua_play_player_sound(lua_State *lua_instance) {
+	std::string id = std::string(lua_tolstring(lua_instance, 1, NULL));
+	
+	l_engine->play_player_sound(id);
+	
+	return 0;
+}
+int lua_is_player_channel_busy(lua_State *lua_instance) {
+	lua_pushboolean(lua_instance, Mix_Playing(1));
+	return 1;
+}
+int lua_stop_player_channel(lua_State *lua_instance) {
+	Mix_HaltChannel(1);
+	return 0;
+}
+int lua_stop_music(lua_State *lua_instance) {
+	Mix_HaltMusic();
+	return 0;
+}
+
+int lua_register_music(lua_State *lua_instance) {
+	std::string id = std::string(lua_tolstring(lua_instance, 1, NULL));
+	std::string file = std::string(lua_tolstring(lua_instance, 2, NULL));
+	
+	l_engine->register_music(id, file);
+	
+	return 0;
+}
+int lua_play_music(lua_State *lua_instance) {
+	std::string id = std::string(lua_tolstring(lua_instance, 1, NULL));
+	
+	l_engine->play_music(id);
+	
+	return 0;
+}
 
 int lua_register_font(lua_State *lua_instance) {
 	std::string id = std::string(lua_tolstring(lua_instance, 1, NULL));
@@ -108,6 +187,19 @@ int lua_get_screen_dimensions(lua_State *lua_instance) {
 	lua_pushnumber(lua_instance, SCREEN_WIDTH);
 	lua_pushnumber(lua_instance, SCREEN_HEIGHT);
 	
+	return 2;
+}
+int lua_set_screen_dimensions(lua_State *lua_instance) {
+	int w = lua_tonumber(lua_instance, 1);
+	int h = lua_tonumber(lua_instance, 2);
+	int current_x = 0;
+	int current_y = 0;
+	
+	SDL_GetWindowPosition(l_engine->window, &current_x, &current_y);
+	SDL_SetWindowSize(l_engine->window, w, h);
+	SDL_SetWindowPosition(l_engine->window, current_x+SCREEN_WIDTH/2-w/2, current_y+SCREEN_HEIGHT/2-h/2);
+	SCREEN_HEIGHT = h;
+	SCREEN_WIDTH = w;
 	return 2;
 }
 
@@ -259,6 +351,14 @@ int lua_entity_get_velocity_angle(lua_State *lua_instance) {
 		
 int lua_player_apply_forward_force(lua_State *lua_instance) {
 	l_engine->state_manager->entity_states[0]->apply_forward_force(lua_tonumber(lua_instance, 1));
+	return 0;
+}	
+int lua_set_sfx_volume(lua_State *lua_instance) {
+	l_engine->set_sfx_volume(lua_tonumber(lua_instance, 1));
+	return 0;
+}	
+int lua_set_music_volume(lua_State *lua_instance) {
+	l_engine->set_music_volume(lua_tonumber(lua_instance, 1));
 	return 0;
 }
 	
@@ -421,10 +521,56 @@ void engine::register_texture(std::string name, std::string filepath) {
 		if (this->textures[i] == NULL) {
 			this->textures[i] = new texture_resource(name, filepath);
 			if (this->textures[i]->texture == NULL) {
+				delete this->textures[i];
 				this->textures[i] = NULL;
 				printf("Failed to create texture %s from %s\n", name.c_str(), filepath.c_str());
 			} else {
 				printf("Created texture %s from %s\n", name.c_str(), filepath.c_str());
+			}
+			return;
+		}
+	}
+}
+
+void engine::register_sound(std::string name, std::string filepath) {
+	for (int i = 0; i < ENGINE_MAX_SOUNDS; i++) {
+		if (this->sounds[i] != NULL) {
+			if (this->sounds[i]->id == name) {
+				printf("Sound %s already loaded\n", name.c_str());
+				return;
+			}
+		}
+	}
+	for (int i = 0; i < ENGINE_MAX_SOUNDS; i++) {
+		if (this->sounds[i] == NULL) {
+			this->sounds[i] = new sound_resource(name, filepath);
+			if (this->sounds[i]->sound == NULL) {
+				this->sounds[i] = NULL;
+				printf("Failed to create sound %s from %s\n", name.c_str(), filepath.c_str());
+			} else {
+				printf("Created sound %s from %s\n", name.c_str(), filepath.c_str());
+			}
+			return;
+		}
+	}
+}
+void engine::register_music(std::string name, std::string filepath) {
+	for (int i = 0; i < ENGINE_MAX_SOUNDS; i++) {
+		if (this->musics[i] != NULL) {
+			if (this->musics[i]->id == name) {
+				printf("Music %s already loaded\n", name.c_str());
+				return;
+			}
+		}
+	}
+	for (int i = 0; i < ENGINE_MAX_SOUNDS; i++) {
+		if (this->musics[i] == NULL) {
+			this->musics[i] = new music_resource(name, filepath);
+			if (this->musics[i]->sound == NULL) {
+				this->musics[i] = NULL;
+				printf("Failed to create music %s from %s\n", name.c_str(), filepath.c_str());
+			} else {
+				printf("Created music %s from %s\n", name.c_str(), filepath.c_str());
 			}
 			return;
 		}
@@ -516,6 +662,35 @@ SDL_Texture* engine::get_texture(std::string name) {
 	printf("Texture '%s' could not be found\n", name.c_str());
 	return NULL;
 }
+void engine::play_sound(std::string name) {
+	for (int i = 0; i < ENGINE_MAX_SOUNDS; i++) {
+		if (this->sounds[i] != NULL) {
+			if (this->sounds[i]->id == name) {
+				Mix_PlayChannel(-1, this->sounds[i]->sound, 0);
+			}
+		}
+	}
+}
+void engine::play_player_sound(std::string name) {
+	for (int i = 0; i < ENGINE_MAX_SOUNDS; i++) {
+		if (this->sounds[i] != NULL) {
+			if (this->sounds[i]->id == name) {
+				Mix_PlayChannel(1, this->sounds[i]->sound, 0);
+			}
+		}
+	}
+}
+
+
+void engine::play_music(std::string name) {
+	for (int i = 0; i < ENGINE_MAX_SOUNDS; i++) {
+		if (this->musics[i] != NULL) {
+			if (this->musics[i]->id == name) {
+				Mix_FadeInMusic(this->musics[i]->sound, 250, 700);
+			}
+		}
+	}
+}
 
 TTF_Font* engine::get_font(std::string name) {
 	for (int i = 0; i < ENGINE_MAX_TEXTURES; i++) {
@@ -548,10 +723,19 @@ void engine::render_text(std::string font_id, std::string text, int x, int y, in
 	SDL_DestroyTexture(loaded_texture);
 }
 
+void engine::set_sfx_volume(double volume) {
+	this->sfx_volume = volume;
+	Mix_Volume(-1,volume * (MIX_MAX_VOLUME));
+}
+void engine::set_music_volume(double volume) {
+	this->music_volume = volume;
+	Mix_VolumeMusic(volume * (MIX_MAX_VOLUME - 28));
+}
+
 engine::engine() {
 	printf("Engine Initializing\n");
 	
-	if( SDL_Init( SDL_INIT_VIDEO ) < 0 )
+	if( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO ) < 0 )
 	{
 		printf( "SDL_INIT_VIDEO produced SDL_Error: %s\n", SDL_GetError() );
 	}
@@ -572,6 +756,19 @@ engine::engine() {
 			this->initialized = false;
 		} else {
 			SDL_SetRenderDrawColor(this->renderer, 0,  0, 0, 0);
+		}
+	}
+	if (this->initialized) {
+		if( Mix_OpenAudio( 44100, AUDIO_F32SYS, 8, 1024 ) < 0 )
+		{
+			printf( "Mix_OpenAudio produced SDL_mixer Error: %s\n", Mix_GetError() );
+			this->initialized = false;
+		} else {
+			if (Mix_Init(MIX_INIT_OGG) & MIX_INIT_OGG != MIX_INIT_OGG) {
+				printf("OGG Support not found\n");
+			}
+			this->set_sfx_volume(this->sfx_volume);
+			this->set_music_volume(this->music_volume);
 		}
 	}
 	
@@ -595,6 +792,7 @@ engine::engine() {
 		printf("Engine Initialized\n");
 	} else {
 		printf("Engine Initialization Failure\n");
+		return;
 	}
 	for (int i = 0; i < ENGINE_MAX_TEXTURES; i++) {
 		this->textures[i] = NULL;
@@ -604,6 +802,10 @@ engine::engine() {
 	}
 	for (int i = 0; i < ENGINE_MAX_FONTS; i++) {
 		this->fonts[i] = NULL;
+	}
+	for (int i = 0; i < ENGINE_MAX_SOUNDS; i++) {
+		this->sounds[i] = NULL;
+		this->musics[i] = NULL;
 	}
 }
 
@@ -724,22 +926,23 @@ void engine::engine_loop(void) {
 	this->current_tick = std::chrono::duration_cast< std::chrono::milliseconds >(
 		std::chrono::system_clock::now().time_since_epoch()
 	);
-	this->display_at = this->current_tick + std::chrono::milliseconds(2000);
-	this->sleeping_till = this->current_tick + std::chrono::milliseconds(2000);
+	this->display_at = this->current_tick + std::chrono::milliseconds(500);
+	this->sleeping_till = this->current_tick + std::chrono::milliseconds(1000);
 	while (this->running) {
 		this->current_tick = std::chrono::duration_cast< std::chrono::milliseconds >(
 			std::chrono::system_clock::now().time_since_epoch()
 		);
 		if (this->current_tick >= this->sleeping_till) {
 			this->update_function();
-			this->sleeping_till = this->current_tick + std::chrono::milliseconds(60);
+			this->sleeping_till = this->current_tick + std::chrono::milliseconds(1000/30);
 		} else {
 	    }
 		if (this->current_tick >= this->display_at) {
 			this->render_function();
-			this->display_at = this->current_tick + std::chrono::milliseconds(10);
+			this->display_at = this->current_tick + std::chrono::milliseconds(1000/60);
 		} else {
 	    }
+		SDL_Delay(20);
 	}
 }
 
@@ -757,6 +960,16 @@ void engine::begin(void) {
 		lua_register(this->lua_instance, "render_direct", lua_render_direct);
 		lua_register(this->lua_instance, "register_font", lua_register_font);
 		lua_register(this->lua_instance, "register_texture", lua_register_texture);
+		lua_register(this->lua_instance, "register_sound", lua_register_sound);
+		lua_register(this->lua_instance, "register_music", lua_register_music);
+		lua_register(this->lua_instance, "play_music", lua_play_music);
+		lua_register(this->lua_instance, "play_sound", lua_play_sound);
+		lua_register(this->lua_instance, "play_player_sound", lua_play_player_sound);
+		lua_register(this->lua_instance, "stop_player_channel", lua_stop_player_channel);
+		lua_register(this->lua_instance, "is_player_channel_busy", lua_is_player_channel_busy);
+		lua_register(this->lua_instance, "music_volume", lua_set_music_volume);
+		lua_register(this->lua_instance, "sfx_volume", lua_set_sfx_volume);
+		lua_register(this->lua_instance, "stop_music", lua_stop_music);
 		lua_register(this->lua_instance, "register_sub_texture", lua_register_sub_texture);
 		lua_register(this->lua_instance, "update_player", lua_player_update);
 		lua_register(this->lua_instance, "set_player_velocity", lua_player_set_velocity);
@@ -769,6 +982,7 @@ void engine::begin(void) {
 		lua_register(this->lua_instance, "is_key_pressed", lua_get_key_pressed);
 		lua_register(this->lua_instance, "is_key_down", lua_get_key_down);
 		lua_register(this->lua_instance, "get_screen_dimensions", lua_get_screen_dimensions);
+		lua_register(this->lua_instance, "set_screen_dimensions", lua_set_screen_dimensions);
 		lua_register(this->lua_instance, "set_far_background", lua_load_background_far);
 		lua_register(this->lua_instance, "render_far_background", lua_render_background_far);
 		lua_register(this->lua_instance, "register_entity", lua_register_entity);
