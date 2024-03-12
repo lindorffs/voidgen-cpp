@@ -65,7 +65,7 @@ public:
 	
 	entity *get_entity(std::string id);
 	
-	void register_entity(std::string fileName, std::string id, int x, int y);
+	void register_entity(std::string fileName, std::string id, double x, double y);
 	void destroy_entity(std::string id);
 	void register_state(std::string file, std::string name);
 private:

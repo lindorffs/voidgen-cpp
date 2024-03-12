@@ -8,11 +8,11 @@
 #include <string>
 #include <chrono>
 
-#define ENGINE_MAX_ENTITIES 512
-#define ENGINE_MAX_TEXTURES 512
-#define ENGINE_MAX_FONTS 512
-#define ENGINE_MAX_SUB_TEXTURES 512
-#define ENGINE_MAX_SOUNDS 512
+#define ENGINE_MAX_ENTITIES 2048
+#define ENGINE_MAX_TEXTURES 2048
+#define ENGINE_MAX_FONTS 2048
+#define ENGINE_MAX_SUB_TEXTURES 2048
+#define ENGINE_MAX_SOUNDS 2048
 
 extern "C" {
 	#include <lua.h>
@@ -62,6 +62,7 @@ public:
 	int s_y;
 	SDL_Rect source_rect;
 	sub_texture();
+	~sub_texture();
 	sub_texture(std::string id, std::string texture_resource, int w, int h, int x, int y);
 };
 
@@ -115,13 +116,18 @@ class engine {
 	void render_sub_texture(sub_texture*, int x, int y, double sx, double sy, bool centered, const double angle);
 	void render_direct(std::string texture_id, int x, int y, double sx, double sy, bool centered, const double angle);
 	
+	void destroy_texture(std::string name);
 	void register_texture(std::string name, std::string filepath);
+	void destroy_sound(std::string name);
 	void register_sound(std::string name, std::string filepath);
 	void play_sound(std::string name);
+	void destroy_music(std::string name);
 	void register_music(std::string name, std::string filepath);
 	void play_music(std::string name);
 	void play_player_sound(std::string name);
+	void destroy_font(std::string name);
 	void register_font(std::string name, std::string filepath, int size);
+	void destroy_sub_texture(std::string id);
 	void register_sub_texture(std::string id, std::string texture_id, int sub_w, int sub_h, int sub_x, int sub_y);
 	SDL_Texture* get_texture(std::string id);
 	TTF_Font* get_font(std::string);

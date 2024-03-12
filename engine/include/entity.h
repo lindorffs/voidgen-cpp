@@ -15,10 +15,10 @@ class entity {
 		virtual void _internal_update(std::chrono::milliseconds time_delta);
 		
 		engine *engine_target = NULL;
-		double x;
-		double y;
-		double vx;
-		double vy;
+		double x = 0.0;
+		double y = 0.0;
+		double vx = 0.0;
+		double vy = 0.0;
 		double rotation = 0.0;
 		entity();
 		~entity();
