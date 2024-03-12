@@ -1,4 +1,4 @@
-OBJS = ./engine/src/*.cpp ./lua/lua-5.3/src/*.c main.cpp
+OBJS = ./engine/src/rendering/*.cpp ./engine/src/*.cpp ./lua/lua-5.3/src/*.c main.cpp
 
 #CC specifies which compiler we're using
 CC = x86_64-w64-mingw32-g++
