@@ -18,8 +18,8 @@ int player_x = 0;
 int player_y = 0;
 
 //Screen dimension constants
-const int SCREEN_WIDTH = 1600;
-const int SCREEN_HEIGHT = 900;
+extern int SCREEN_WIDTH;
+extern int SCREEN_HEIGHT;
 
 
 void State::render(void) {
@@ -63,15 +63,6 @@ void LuaState::_internal_render(void) {
 	lua_call(this->engine_target->lua_instance, 0, 0);
 }
 void LuaState::_internal_update(std::chrono::milliseconds time_delta) {
-	SDL_Event e;
-	while( SDL_PollEvent( &e ) ){
-		if( e.type == SDL_QUIT ) this->engine_target->stop();
-		else if (e.type == SDL_KEYDOWN) {
-			if (e.key.keysym.sym == SDLK_ESCAPE) {
-				this->engine_target->stop();
-			}
-		}
-	}
 	lua_getglobal(this->engine_target->lua_instance, (state_prefix+std::string("_update")).c_str());
 	lua_call(this->engine_target->lua_instance, 0, 0);
 }
@@ -96,7 +87,7 @@ state_machine::state_machine(engine *engine_target) {
 	this->entity_states[0] = new PlayerClass(engine_target);
 }
 
-void state_machine::register_entity(std::string fileName, std::string id, int x, int y) {
+void state_machine::register_entity(std::string fileName, std::string id, double x, double y) {
 	for (int i = 1; i < ENGINE_MAX_ENTITIES; i++) {
 		if (this->entity_states[i] != NULL) {
 			if (this->entity_states[i]->id == id) {
@@ -107,8 +98,14 @@ void state_machine::register_entity(std::string fileName, std::string id, int x,
 	}
 	for (int i = 1; i < ENGINE_MAX_ENTITIES; i++) {
 		if (this->entity_states[i] == NULL) {
-				printf("Created entity '%s'.\n", id.c_str());
 			this->entity_states[i] = new entity(fileName, id, x, y, this->engine_target);
+				printf("Created entity '%s' '%s'.\n", this->entity_states[i]->id.c_str(), this->entity_states[i]->base_texture_id.c_str());
+			return;
+		}
+	}
+	for (int i = 1; i < ENGINE_MAX_ENTITIES; i++) {
+		if (this->entity_states[i] != NULL) {
+				printf("Existing entity '%s'.\n", this->entity_states[i]->id.c_str());
 			return;
 		}
 	}
@@ -117,11 +114,9 @@ void state_machine::destroy_entity(std::string id) {
 	for (int i = 0; i < ENGINE_MAX_ENTITIES; i++) {
 		if (this->entity_states[i] != NULL) {
 			if (this->entity_states[i]->id == id) {
-				this->entity_states[i]->id = "";
-				this->entity_states[i]->texture_id = "";
-				this->entity_states[i]->engine_target = NULL;
-				this->entity_states[i] = NULL;
 				printf("Destroyed entity '%s'.\n", id.c_str());
+				delete this->entity_states[i];
+				this->entity_states[i] = NULL;
 				return;
 			}
 		}
@@ -153,6 +148,15 @@ void state_machine::render_entities(void) {
 }
 
 void state_machine::update(std::chrono::milliseconds time_delta) {
+	SDL_Event e;
+	while( SDL_PollEvent( &e ) ){
+		if( e.type == SDL_QUIT ) this->engine_target->stop();
+		else if (e.type == SDL_KEYDOWN) {
+			if (e.key.keysym.sym == SDLK_ESCAPE) {
+				this->set_current_state(this->states[0]->state_prefix);
+			}
+		}
+	}
 	this->last_time_delta = time_delta;
 	this->keyboard_state = SDL_GetKeyboardState(NULL);
 	for (int i = 0; i < 256; i++) {

@@ -10,8 +10,8 @@ constexpr double radToDeg(double rad) { return rad*(180/PI); }
 extern engine *l_engine;
 extern SDL_Point getsize(SDL_Texture*);
 //Screen dimension constants
-const int SCREEN_WIDTH = 1600;
-const int SCREEN_HEIGHT = 900;
+extern int SCREEN_WIDTH;
+extern int SCREEN_HEIGHT;
 void entity::_internal_render(void) {
 	SDL_Texture *texture = this->engine_target->get_texture(this->texture_id);
 	int x = SCREEN_WIDTH/2 + this->x - this->engine_target->state_manager->entity_states[0]->x;
@@ -32,6 +32,14 @@ void entity::_internal_update(std::chrono::milliseconds time_delta) {
 entity::entity() {
 }
 entity::~entity() {
+	this->id = "";
+	this->texture_id ="";
+	this->base_texture_id ="";
+	this->x = NULL;
+	this->y = NULL;
+	this->vx = NULL;
+	this->vy = NULL;
+	this->rotation = NULL;
 }
 
 double entity::get_velocity_angle() {
@@ -68,8 +76,6 @@ entity::entity(std::string texture_id, std::string id, int x, int y, engine *eng
 	this->base_texture_id = texture_id;
 	this->x = x;
 	this->y = y;
-	this->vx = 0;
-	this->vx = 0;
 	
 	this->id = id;
 }
@@ -154,12 +160,10 @@ void  PlayerClass::_internal_update(std::chrono::milliseconds time_delta) {
 		this->x += this->vx / time_delta.count();
 		this->y += this->vy / time_delta.count();
 		if (key_state[SDL_SCANCODE_W]) {
-			this->vx -= 10 * cos((this->rotation + 90) * (PI / 180));
-			this->vy -= 10 * sin((this->rotation + 90) * (PI / 180));
+			this->apply_forward_force(4);
 		}
 		if (key_state[SDL_SCANCODE_S]) {
-			this->vx += 5 * cos((this->rotation + 90) * (PI / 180));
-			this->vy += 5 * sin((this->rotation + 90) * (PI / 180));
+			this->apply_forward_force(-2);
 		}
 		if (key_state[SDL_SCANCODE_Q]) {
 			this->rotation -= 1.5;
