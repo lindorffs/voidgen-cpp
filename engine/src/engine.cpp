@@ -17,25 +17,6 @@ engine *l_engine = NULL;
 SDL_Texture* background_far = NULL;
 SDL_Texture* background_close = NULL;
 
-font::font(std::string id, std::string filename, int size) {
-	this->id = id;
-	this->filename = filename;
-	this->_font = l_engine->load_font(filename, size);
-}
-
-texture_resource::~texture_resource() {
-	this->id = "";
-	this->file = "";
-	SDL_DestroyTexture(this->texture);
-	this->texture = NULL;
-}
-texture_resource::texture_resource() {}
-texture_resource::texture_resource(std::string id, std::string file) {
-	this->id = id;
-	this->file = file;
-	this->texture = l_engine->load_image(file);
-}
-
 
 sound_resource::~sound_resource() {
 	this->id = "";
@@ -63,23 +44,6 @@ music_resource::music_resource(std::string id, std::string file) {
 	this->sound = Mix_LoadMUS(file.c_str());
 }
 
-
-sub_texture::sub_texture() {}
-sub_texture::sub_texture(std::string id, std::string texture_resource, int w, int h, int x, int y) {
-	this->id = id;
-	this->texture_resource = texture_resource;
-	this->w = w;
-	this->h = h;
-	this->s_x = x;
-	this->s_y = y;
-}
-
-SDL_Point getsize(SDL_Texture *texture) {
-    SDL_Point size;
-    SDL_QueryTexture(texture, NULL, NULL, &size.x, &size.y);
-    return size;
-}
-
 int lua_load_background_far(lua_State *lua_instance) {
 	const char *image_path = lua_tolstring(lua_instance, 1, NULL);
 	SDL_Texture* loaded_image = l_engine->load_image(std::string(image_path));
@@ -100,14 +64,6 @@ int lua_render_background_far(lua_State *lua_instance) {
 	return 0;
 }
 
-int lua_register_texture(lua_State *lua_instance) {
-	std::string id = std::string(lua_tolstring(lua_instance, 1, NULL));
-	std::string file = std::string(lua_tolstring(lua_instance, 2, NULL));
-	
-	l_engine->register_texture(id, file);
-	
-	return 0;
-}
 int lua_register_sound(lua_State *lua_instance) {
 	std::string id = std::string(lua_tolstring(lua_instance, 1, NULL));
 	std::string file = std::string(lua_tolstring(lua_instance, 2, NULL));
@@ -228,8 +184,8 @@ int lua_register_entity(lua_State *lua_instance) {
 	const char *file = lua_tolstring(lua_instance, 1, NULL);
 	const char *id = lua_tolstring(lua_instance, 2, NULL);
 	
-	int x = lua_tonumber(lua_instance, 3);
-	int y = lua_tonumber(lua_instance, 4);
+	double x = lua_tonumber(lua_instance, 3);
+	double y = lua_tonumber(lua_instance, 4);
 	
 	l_engine->state_manager->register_entity(file, id, x, y);
 	
@@ -279,6 +235,31 @@ int lua_get_key_down(lua_State *lua_instance) {
 	
 	return 1;
 }
+int lua_destroy_sub_texture(lua_State *lua_instance) {
+	std::string id = lua_tostring(lua_instance, 1);
+	l_engine->destroy_sub_texture(id);
+	return 0;
+}
+int lua_destroy_texture(lua_State *lua_instance) {
+	std::string id = lua_tostring(lua_instance, 1);
+	l_engine->destroy_texture(id);
+	return 0;
+}
+int lua_destroy_font(lua_State *lua_instance) {
+	std::string id = lua_tostring(lua_instance, 1);
+	l_engine->destroy_font(id);
+	return 0;
+}
+int lua_destroy_sound(lua_State *lua_instance) {
+	std::string id = lua_tostring(lua_instance, 1);
+	l_engine->destroy_sound(id);
+	return 0;
+}
+int lua_destroy_music(lua_State *lua_instance) {
+	std::string id = lua_tostring(lua_instance, 1);
+	l_engine->destroy_music(id);
+	return 0;
+}
 
 int lua_entity_get_position(lua_State *lua_instance) {
 	std::string id = std::string(lua_tolstring(lua_instance, 1, NULL));
@@ -300,6 +281,19 @@ int lua_player_get_velocity(lua_State *lua_instance) {
 	lua_pushnumber(lua_instance, l_engine->state_manager->entity_states[0]->vy);
 	
 	return 2;
+}
+int lua_entity_set_velocity(lua_State *lua_instance) {
+	std::string id = std::string(lua_tolstring(lua_instance, 1, NULL));
+	double vx = lua_tonumber(lua_instance, 2);
+	double vy = lua_tonumber(lua_instance, 3);
+	
+	entity *target = l_engine->state_manager->get_entity(id);
+	if (target != NULL) {
+		target->vx = vx;
+		target->vy = vy;
+	}
+	
+	return 0;
 }
 
 int lua_entity_get_velocity(lua_State *lua_instance) {
@@ -492,51 +486,36 @@ int lua_player_update(lua_State *lua_instance) {
 	return 0;
 }
 
-SDL_Texture* engine::load_image(std::string path) {
-	SDL_Texture* loaded_texture = NULL;
-	SDL_Surface* optimized_surface = NULL;
+int lua_register_texture(lua_State *lua_instance) {
+	std::string id = std::string(lua_tolstring(lua_instance, 1, NULL));
+	std::string file = std::string(lua_tolstring(lua_instance, 2, NULL));
 	
-	SDL_Surface* loaded_surface = IMG_Load(path.c_str());
+	l_engine->register_texture(id, file);
 	
-	if (loaded_surface == NULL) {
-		printf("IMG_Load(%s) produced SDL_Image error: %s\n", path.c_str(), IMG_GetError());
-	} else {
-		
-		loaded_texture = SDL_CreateTextureFromSurface(this->renderer, loaded_surface);
-		SDL_FreeSurface(loaded_surface);
-	}
-	return loaded_texture;
+	return 0;
 }
 
-void engine::register_texture(std::string name, std::string filepath) {
-	for (int i = 0; i < ENGINE_MAX_TEXTURES; i++) {
-		if (this->textures[i] != NULL) {
-			if (this->textures[i]->id == name) {
-				printf("Texture %s already loaded\n", name.c_str());
+
+
+void engine::destroy_sound(std::string name) {
+	for (int i = 0; i < ENGINE_MAX_SOUNDS; i++) {
+		if (this->sounds[i] != NULL) {
+			if (this->sounds[i]->id == name) {
+				delete this->sounds[i];
+				this->sounds[i] = NULL;
+				printf("Destroyed sound '%s.'\n", name.c_str());
 				return;
 			}
 		}
 	}
-	for (int i = 0; i < ENGINE_MAX_TEXTURES; i++) {
-		if (this->textures[i] == NULL) {
-			this->textures[i] = new texture_resource(name, filepath);
-			if (this->textures[i]->texture == NULL) {
-				delete this->textures[i];
-				this->textures[i] = NULL;
-				printf("Failed to create texture %s from %s\n", name.c_str(), filepath.c_str());
-			} else {
-				printf("Created texture %s from %s\n", name.c_str(), filepath.c_str());
-			}
-			return;
-		}
-	}
+	printf("Could not destroy sound '%s.'\n", name.c_str());
 }
 
 void engine::register_sound(std::string name, std::string filepath) {
 	for (int i = 0; i < ENGINE_MAX_SOUNDS; i++) {
 		if (this->sounds[i] != NULL) {
 			if (this->sounds[i]->id == name) {
-				printf("Sound %s already loaded\n", name.c_str());
+				printf("Sound '%s' already loaded\n", name.c_str());
 				return;
 			}
 		}
@@ -546,19 +525,34 @@ void engine::register_sound(std::string name, std::string filepath) {
 			this->sounds[i] = new sound_resource(name, filepath);
 			if (this->sounds[i]->sound == NULL) {
 				this->sounds[i] = NULL;
-				printf("Failed to create sound %s from %s\n", name.c_str(), filepath.c_str());
+				printf("Failed to create sound '%s' from %s\n", name.c_str(), filepath.c_str());
 			} else {
-				printf("Created sound %s from %s\n", name.c_str(), filepath.c_str());
+				printf("Created sound '%s' from '%s.'\n", name.c_str(), filepath.c_str());
 			}
 			return;
 		}
 	}
 }
+
+void engine::destroy_music(std::string name) {
+	for (int i = 0; i < ENGINE_MAX_SOUNDS; i++) {
+		if (this->musics[i] != NULL) {
+			if (this->musics[i]->id == name) {
+				delete this->musics[i];
+				this->musics[i] = NULL;
+				printf("Destroyed music '%s.'\n", name.c_str());
+				return;
+			}
+		}
+	}
+	printf("Could not destroy music '%s.'\n", name.c_str());
+}
+
 void engine::register_music(std::string name, std::string filepath) {
 	for (int i = 0; i < ENGINE_MAX_SOUNDS; i++) {
 		if (this->musics[i] != NULL) {
 			if (this->musics[i]->id == name) {
-				printf("Music %s already loaded\n", name.c_str());
+				printf("Music '%s' already loaded\n", name.c_str());
 				return;
 			}
 		}
@@ -568,37 +562,16 @@ void engine::register_music(std::string name, std::string filepath) {
 			this->musics[i] = new music_resource(name, filepath);
 			if (this->musics[i]->sound == NULL) {
 				this->musics[i] = NULL;
-				printf("Failed to create music %s from %s\n", name.c_str(), filepath.c_str());
+				printf("Failed to create music '%s' from '%s.'\n", name.c_str(), filepath.c_str());
 			} else {
-				printf("Created music %s from %s\n", name.c_str(), filepath.c_str());
+				printf("Created music '%s' from '%s.'\n", name.c_str(), filepath.c_str());
 			}
 			return;
 		}
 	}
 }
 
-void engine::register_font(std::string name, std::string filepath, int size) {
-	for (int i = 0; i < ENGINE_MAX_FONTS; i++) {
-		if (this->fonts[i] != NULL) {
-			if (this->fonts[i]->id == name) {
-				printf("Font %s already loaded\n", name.c_str());
-				return;
-			}
-		}
-	}
-	for (int i = 0; i < ENGINE_MAX_FONTS; i++) {
-		if (this->fonts[i] == NULL) {
-			this->fonts[i] = new font(name, filepath, size);
-			if (this->fonts[i]->_font == NULL) {
-				this->fonts[i] = NULL;
-				printf("Failed to create texture %s from %s\n", name.c_str(), filepath.c_str());
-			} else {
-				printf("Created texture %s from %s\n", name.c_str(), filepath.c_str());
-			}
-			return;
-		}
-	}
-}
+
 
 int lua_register_sub_texture(lua_State *lua_instance) {
 	std::string id = std::string(lua_tolstring(lua_instance, 1, NULL));
@@ -612,56 +585,7 @@ int lua_register_sub_texture(lua_State *lua_instance) {
 	return 0;
 }
 
-void engine::register_sub_texture(std::string id, std::string texture_id, int sub_w, int sub_h, int sub_x, int sub_y) {
-	bool texture_found = false;
-	for (int i = 0; i < ENGINE_MAX_SUB_TEXTURES; i++) {
-		if (this->sub_textures[i] != NULL) {
-			if (this->sub_textures[i]->id == id) {
-				printf("Sub Texture %s already created.\n", texture_id.c_str());
-				return;
-			}
-		}
-	}
-	for (int i = 0; i < ENGINE_MAX_TEXTURES; i++) {
-		if (this->textures[i] != NULL) {
-			if (this->textures[i]->id == texture_id) {
-				texture_found = true;
-				break;
-			}
-		}
-	}
-	
-	if (not texture_found) {
-		printf("Texture '%s' for sub texture '%s' does not exist.\n", texture_id.c_str(), id.c_str());
-		return;
-	}
-	SDL_Point texture_size = getsize(this->get_texture(texture_id));
-	
-	if (sub_x + sub_w > texture_size.x or sub_y + sub_h > texture_size.y or sub_x + sub_w < 0 or sub_y + sub_h < 0) {
-		printf("Sub texture '%s' is outside of texture '%s'\n", id.c_str(), texture_id.c_str());
-		return;
-	}
-	
-	for (int i = 0; i < ENGINE_MAX_SUB_TEXTURES; i++) {
-		if (this->sub_textures[i] == NULL) {
-			this->sub_textures[i] = new sub_texture(id, texture_id, sub_w, sub_h, sub_x, sub_y);
-			printf("Created sub texture %s from %s\n", id.c_str(), texture_id.c_str());
-			return;
-		}
-	}
-}
 
-SDL_Texture* engine::get_texture(std::string name) {
-	for (int i = 0; i < ENGINE_MAX_TEXTURES; i++) {
-		if (this->textures[i] != NULL) {
-			if (this->textures[i]->id == name) {
-				return this->textures[i]->texture;
-			}
-		}
-	}
-	printf("Texture '%s' could not be found\n", name.c_str());
-	return NULL;
-}
 void engine::play_sound(std::string name) {
 	for (int i = 0; i < ENGINE_MAX_SOUNDS; i++) {
 		if (this->sounds[i] != NULL) {
@@ -692,36 +616,7 @@ void engine::play_music(std::string name) {
 	}
 }
 
-TTF_Font* engine::get_font(std::string name) {
-	for (int i = 0; i < ENGINE_MAX_TEXTURES; i++) {
-		if (this->fonts[i] != NULL) {
-			if (this->fonts[i]->id == name) {
-				return this->fonts[i]->_font;
-			}
-		}
-	}
-	printf("Font '%s' could not be found\n", name.c_str());
-	return NULL;
-}
 
-TTF_Font* engine::load_font(std::string path, int size) {
-	TTF_Font* new_font = TTF_OpenFont( path.c_str(), size );
-    if( new_font == NULL )
-    {
-        printf( "TTF_OpenFont(%s) produced SDL_ttf error: %s\n", TTF_GetError() );
-    }
-    return new_font;
-}
-
-void engine::render_text(std::string font_id, std::string text, int x, int y, int r, int g, int b, bool centered) {
-	SDL_Color text_color = {r,g,b};
-	SDL_Surface* textSurface = TTF_RenderText_Solid( this->get_font(font_id), text.c_str(), text_color);
-	SDL_Texture* loaded_texture = SDL_CreateTextureFromSurface(this->renderer, textSurface);
-	SDL_Point size = getsize(loaded_texture);
-	this->render_at(loaded_texture, x, y, size.x, size.y, centered, 0);
-	SDL_FreeSurface(textSurface);
-	SDL_DestroyTexture(loaded_texture);
-}
 
 void engine::set_sfx_volume(double volume) {
 	this->sfx_volume = volume;
@@ -809,118 +704,6 @@ engine::engine() {
 	}
 }
 
-void engine::update_function(void) {
-	fflush(stdout);
-	this->state_manager->update(std::chrono::milliseconds(30));
-}
-
-void engine::render_function(void) {
-	SDL_RenderClear(this->renderer);
-	this->state_manager->render();
-	SDL_RenderPresent(this->renderer);
-}
-
-void engine::render_at(SDL_Texture* surface, int x, int y, double sx, double sy, bool centered, const double angle) {
-	SDL_Rect target_rect;
-	SDL_Point size = getsize(surface);
-	if (sx != 0) {
-		target_rect.w = sx;
-		if (centered) {
-			target_rect.x = x - (sx) / 2;
-		} else {
-			target_rect.x = x;
-		}
-	} else {
-		target_rect.w = size.x;
-		if (centered) {
-			target_rect.x = x - (size.x) /2;
-		} else {
-			target_rect.x = x;
-		}
-	}
-	if (sy != 0) {
-		target_rect.h = sy;
-		if (centered) {
-			target_rect.y = y - (sy) / 2;
-		} else {
-			target_rect.y = y;
-		}
-	} else {
-		target_rect.h = size.y;
-		if (centered) {
-			target_rect.y = y - (size.y) /2;
-		} else {
-			target_rect.y = y;
-		}
-	}
-	SDL_RenderCopyEx(this->renderer, surface, NULL, &target_rect, angle, NULL, SDL_FLIP_NONE);
-}
-
-void engine::render_sub_texture(sub_texture *texture, int x, int y, double sx, double sy, bool centered, const double angle) {
-	SDL_Rect source_rect;
-	source_rect.x = texture->s_x;
-	source_rect.y = texture->s_y;
-	source_rect.w = texture->w;
-	source_rect.h = texture->h;
-	SDL_Rect target_rect;
-	SDL_Point size = getsize(this->get_texture(texture->texture_resource));
-	if (sx != 0) {
-		target_rect.w = sx;
-		if (centered) {
-			target_rect.x = x - (sx) / 2;
-		} else {
-			target_rect.x = x;
-		}
-	} else {
-		target_rect.w = size.x;
-		if (centered) {
-			target_rect.x = x - (size.x) /2;
-		} else {
-			target_rect.x = x;
-		}
-	}
-	if (sy != 0) {
-		target_rect.h = sy;
-		if (centered) {
-			target_rect.y = y - (sy) / 2;
-		} else {
-			target_rect.y = y;
-		}
-	} else {
-		target_rect.h = size.y;
-		if (centered) {
-			target_rect.y = y - (size.y) /2;
-		} else {
-			target_rect.y = y;
-		}
-	}
-	SDL_RenderCopyEx(this->renderer, this->get_texture(texture->texture_resource), &source_rect, &target_rect, angle, NULL, SDL_FLIP_NONE);
-}
-
-void engine::render_direct(std::string id, int x, int y, double sx, double sy, bool centered, const double angle) {
-	for (int i = 0; i < ENGINE_MAX_SUB_TEXTURES; i++) {
-		if (l_engine->sub_textures[i] != NULL) {
-			if (l_engine->sub_textures[i]->id == id) {
-				l_engine->render_sub_texture(l_engine->sub_textures[i], x, y, sx, sy, centered, angle);
-				return;
-			}
-		}
-	}
-	
-	SDL_Texture *texture = NULL;
-	texture = l_engine->get_texture(id);
-	
-	if (texture != NULL) {
-		l_engine->render_at(texture, x, y, sx, sy, centered, angle);
-	}
-}
-
-void engine::render_logo(void) {
-	SDL_RenderClear(this->renderer);
-	this->render_at(this->load_logo, SCREEN_WIDTH /2 , SCREEN_HEIGHT /2, 256, 256, true, 0);
-	SDL_RenderPresent(this->renderer);
-}
-
 void engine::engine_loop(void) {
 	int i = 0;
 	this->current_tick = std::chrono::duration_cast< std::chrono::milliseconds >(
@@ -942,7 +725,7 @@ void engine::engine_loop(void) {
 			this->display_at = this->current_tick + std::chrono::milliseconds(1000/60);
 		} else {
 	    }
-		SDL_Delay(20);
+		SDL_Delay(1);
 	}
 }
 
@@ -990,7 +773,7 @@ void engine::begin(void) {
 		lua_register(this->lua_instance, "render_entities", lua_render_entities);
 		lua_register(this->lua_instance, "update_entities", lua_update_entities);
 		
-		//lua_register(this->lua_instance, "set_entity_velocity", lua_entity_set_velocity);
+		lua_register(this->lua_instance, "set_entity_velocity", lua_entity_set_velocity);
 		lua_register(this->lua_instance, "get_entity_velocity_angle", lua_entity_get_velocity_angle);
 		lua_register(this->lua_instance, "get_entity_velocity", lua_entity_get_velocity);
 		lua_register(this->lua_instance, "set_entity_position", lua_entity_set_position);
@@ -1001,22 +784,81 @@ void engine::begin(void) {
 		lua_register(this->lua_instance, "entity_force_forward", lua_entity_apply_forward_force);
 		lua_register(this->lua_instance, "entity_set_texture", lua_entity_set_texture);
 		lua_register(this->lua_instance, "entity_reset_texture", lua_entity_reset_texture);
+		lua_register(this->lua_instance, "destroy_texture", lua_destroy_texture);
+		lua_register(this->lua_instance, "destroy_sub_texture", lua_destroy_sub_texture);
+		lua_register(this->lua_instance, "destroy_sound", lua_destroy_sound);
+		lua_register(this->lua_instance, "destroy_music", lua_destroy_music);
+		lua_register(this->lua_instance, "destroy_font", lua_destroy_font);
 		
 		this->state_manager = new state_machine(this);
+		
+		// TODO: Add protection here. This call seg-faults if pre_init.lua does not exist, or if lua interpreter fails.
 		luaL_dofile(this->lua_instance, "pre_init.lua");
+		this->render_logo();
 		this->running = true;
 		this->engine_loop();
 		
 		lua_close(this->lua_instance);
 		
+		for (int i = 0; i < ENGINE_MAX_ENTITIES; i++) {
+			if (this->state_manager->entity_states[i] != NULL) {
+				printf("Destroying entity '%s'.\n", this->state_manager->entity_states[i]->id.c_str());
+				delete this->state_manager->entity_states[i];
+				this->state_manager->entity_states[i] = NULL;
+			}
+		}
+		
+		for (int i = 0; i < ENGINE_MAX_TEXTURES; i++) {
+			if (this->textures[i] != NULL) {
+				printf("Destroying texture '%s'.\n", this->textures[i]->id.c_str());
+				delete this->textures[i];
+				this->textures[i] = NULL;
+			}
+		}
+		for (int i = 0; i < ENGINE_MAX_SUB_TEXTURES; i++) {
+			
+		}
+		for (int i = 0; i < ENGINE_MAX_FONTS; i++) {
+			if (this->fonts[i] != NULL) {
+				printf("Destroying font '%s'.\n", this->fonts[i]->id.c_str());
+				delete this->fonts[i];
+				this->fonts[i] = NULL;
+			}
+		}
+		for (int i = 0; i < ENGINE_MAX_SOUNDS; i++) {
+			if (this->sounds[i] != NULL) {
+				printf("Destroying sound '%s'.\n", this->sounds[i]->id.c_str());
+				delete this->sounds[i];
+				this->sounds[i] = NULL;
+			}
+			if (this->musics[i] != NULL) {
+				printf("Destroying music '%s'.\n", this->musics[i]->id.c_str());
+				delete this->musics[i];
+				this->musics[i] = NULL;
+			}
+		}
+		
 		SDL_DestroyRenderer(this->renderer);
 		SDL_DestroyWindow( this->window );
-		this->renderer = NULL;
-		this->window = NULL;
+		
+		Mix_Quit();
+		TTF_Quit();
 		IMG_Quit();
 		SDL_Quit();
 		printf("Engine Finished\n");
 	}
+}
+
+
+void engine::update_function(void) {
+	this->state_manager->update(std::chrono::milliseconds(30));
+	fflush(stdout);
+}
+
+void engine::render_function(void) {
+	SDL_RenderClear(this->renderer);
+	this->state_manager->render();
+	SDL_RenderPresent(this->renderer);
 }
 
 void engine::stop(void) {
