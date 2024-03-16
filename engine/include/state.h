@@ -57,6 +57,11 @@ public:
 	bool keys_pressed[256];
 	bool keys_released[256];
 	const Uint8 *keyboard_state = NULL;
+	bool last_mouse_press[3];
+	bool mouse_pressed[3];
+	bool mouse_state[3];
+	bool mouse_release[3];
+	
 	std::string statename;
 	entity *entity_states[ENGINE_MAX_ENTITIES];
 	

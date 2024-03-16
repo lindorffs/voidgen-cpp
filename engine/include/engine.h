@@ -75,7 +75,6 @@ class font {
 	font();
 	font(std::string id, std::string filename, int);
 };
-
 class engine {
 	private:
 		bool running = false;
