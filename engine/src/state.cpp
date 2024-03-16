@@ -85,6 +85,18 @@ state_machine::state_machine(engine *engine_target) {
 		this->entity_states[i] = NULL;
 	}
 	this->entity_states[0] = new PlayerClass(engine_target);
+	this->mouse_state[0] = false;
+	this->mouse_state[1] = false;
+	this->mouse_state[2] = false;
+	this->mouse_pressed[0] = false;
+	this->mouse_pressed[1] = false;
+	this->mouse_pressed[2] = false;
+	this->mouse_release[0] = false;
+	this->mouse_release[1] = false;
+	this->mouse_release[2] = false;
+	this->last_mouse_press[0] = false;
+	this->last_mouse_press[1] = false;
+	this->last_mouse_press[2] = false;
 }
 
 void state_machine::register_entity(std::string fileName, std::string id, double x, double y) {
@@ -170,6 +182,36 @@ void state_machine::update(std::chrono::milliseconds time_delta) {
 			}
 		}
 		this->last_keys[i] = this->keyboard_state[i];
+	}
+	
+	Uint32 button_press = SDL_GetMouseState(NULL, NULL);
+	if (button_press & SDL_BUTTON(1)) {
+		this->mouse_state[0] = true;
+	} else {
+		this->mouse_state[0] = false;
+	}
+	if (button_press & SDL_BUTTON(3)) {
+		this->mouse_state[2] = true;
+	} else {
+		this->mouse_state[2] = false;
+	}
+	if (button_press & SDL_BUTTON(2)) {
+		this->mouse_state[1] = true;
+	} else {
+		this->mouse_state[1] = false;
+	}
+
+	for (int i = 0; i <= 2; i++) {
+		this->mouse_release[i] = false;
+		this->mouse_pressed[i] = false;
+		if (this->mouse_state[i] != this->last_mouse_press[i]) {
+			if (this->last_mouse_press[i]) {
+				this->mouse_release[i] = true;
+			} else {
+				this->mouse_pressed[i] = true;
+			}
+			this->last_mouse_press[i] = this->mouse_state[i];
+		}
 	}
 	this->current_state->update(time_delta);
 }

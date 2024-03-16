@@ -218,6 +218,68 @@ int lua_update_entities(lua_State *lua_instance) {
 	return 0;
 }
 
+int lua_get_mouse_position(lua_State *lua_instance) {
+	int x = 0;
+	int y = 0;
+	
+	SDL_GetMouseState(&x, &y);
+	
+	lua_pushnumber(lua_instance,x);
+	lua_pushnumber(lua_instance,y);
+	
+	return 2;
+}
+int lua_get_mouse_pressed(lua_State *lua_instance) {
+	std::string button = std::string(lua_tolstring(lua_instance, 1, NULL));
+	bool pressed = false;
+	if (button == "left") {
+		pressed = l_engine->state_manager->mouse_state[0];
+	} else if (button == "right") {
+		pressed = l_engine->state_manager->mouse_state[2];
+	} else if (button == "middle") {
+		pressed = l_engine->state_manager->mouse_state[1];
+	} else {
+		printf("Mouse Button '%s' not found.\n", button.c_str());
+	}
+	
+	lua_pushboolean(lua_instance,pressed);
+	
+	return 1;
+}
+int lua_was_mouse_released(lua_State *lua_instance) {
+	std::string button = std::string(lua_tolstring(lua_instance, 1, NULL));
+	bool pressed = false;
+	if (button == "left") {
+		pressed = l_engine->state_manager->mouse_release[0];
+	} else if (button == "right") {
+		pressed = l_engine->state_manager->mouse_release[2];
+	} else if (button == "middle") {
+		pressed = l_engine->state_manager->mouse_release[1];
+	} else {
+		printf("Mouse Button '%s' not found.\n", button.c_str());
+	}
+	
+	lua_pushboolean(lua_instance,pressed);
+	
+	return 1;
+}
+int lua_was_mouse_pressed(lua_State *lua_instance) {
+	std::string button = std::string(lua_tolstring(lua_instance, 1, NULL));
+	bool pressed = false;
+	if (button == "left") {
+		pressed = l_engine->state_manager->mouse_pressed[0];
+	} else if (button == "right") {
+		pressed = l_engine->state_manager->mouse_pressed[2];
+	} else if (button == "middle") {
+		pressed = l_engine->state_manager->mouse_pressed[1];
+	} else {
+		printf("Mouse Button '%s' not found.\n", button.c_str());
+	}
+	
+	lua_pushboolean(lua_instance,pressed);
+	
+	return 1;
+}
 int lua_get_key_pressed(lua_State *lua_instance) {
 	SDL_Keycode check;
 	const char *key = lua_tolstring(lua_instance, 1, NULL);
@@ -764,6 +826,10 @@ void engine::begin(void) {
 		lua_register(this->lua_instance, "player_force_forward", lua_player_apply_forward_force);
 		lua_register(this->lua_instance, "is_key_pressed", lua_get_key_pressed);
 		lua_register(this->lua_instance, "is_key_down", lua_get_key_down);
+		lua_register(this->lua_instance, "get_mouse_position", lua_get_mouse_position);
+		lua_register(this->lua_instance, "is_mouse_pressed", lua_get_mouse_pressed);
+		lua_register(this->lua_instance, "was_mouse_pressed", lua_was_mouse_pressed);
+		lua_register(this->lua_instance, "was_mouse_released", lua_was_mouse_released);
 		lua_register(this->lua_instance, "get_screen_dimensions", lua_get_screen_dimensions);
 		lua_register(this->lua_instance, "set_screen_dimensions", lua_set_screen_dimensions);
 		lua_register(this->lua_instance, "set_far_background", lua_load_background_far);
