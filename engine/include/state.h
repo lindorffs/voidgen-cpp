@@ -57,6 +57,11 @@ public:
 	bool keys_pressed[256];
 	bool keys_released[256];
 	const Uint8 *keyboard_state = NULL;
+	bool last_mouse_press[3];
+	bool mouse_pressed[3];
+	bool mouse_state[3];
+	bool mouse_release[3];
+	
 	std::string statename;
 	entity *entity_states[ENGINE_MAX_ENTITIES];
 	
@@ -65,7 +70,7 @@ public:
 	
 	entity *get_entity(std::string id);
 	
-	void register_entity(std::string fileName, std::string id, int x, int y);
+	void register_entity(std::string fileName, std::string id, double x, double y);
 	void destroy_entity(std::string id);
 	void register_state(std::string file, std::string name);
 private:
